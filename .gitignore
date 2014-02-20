@@ -11,4 +11,4 @@ idea
 .project
 .settings/
 dependency-reduced-pom.xml
-
+.gradle
