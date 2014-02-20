@@ -1,3 +1,6 @@
+/**
+ * Build for Fabric3 Gradle plugins
+ */
 apply plugin: 'java'
 
 repositories {
