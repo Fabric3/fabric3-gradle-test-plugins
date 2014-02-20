@@ -1,1 +1,3 @@
 rootProject.name = 'fabric3-gradle-plugins'
+
+include 'integration-test'
