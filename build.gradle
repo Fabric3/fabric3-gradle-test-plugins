@@ -1,12 +1,17 @@
 /**
  * Build for Fabric3 Gradle plugins
  */
-apply plugin: 'java'
+allprojects {
+    apply plugin: 'java'
 
-repositories {
-    mavenCentral()
+    repositories {
+        mavenLocal()
+        mavenCentral()
+    }
+
 }
-
-dependencies {
-    testCompile 'junit:junit:4.5'
+subprojects {
+    dependencies {
+        testCompile 'junit:junit:4.5'
+    }
 }
