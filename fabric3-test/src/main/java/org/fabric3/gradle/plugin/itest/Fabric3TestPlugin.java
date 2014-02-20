@@ -41,7 +41,7 @@ import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
 /**
- *
+ * The Fabric3 integration test plugin.
  */
 public class Fabric3TestPlugin implements Plugin<Project> {
 

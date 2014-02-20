@@ -38,15 +38,17 @@
 package org.fabric3.gradle.plugin.itest;
 
 import org.gradle.api.DefaultTask;
+import org.gradle.api.logging.LogLevel;
 import org.gradle.api.tasks.TaskAction;
 
 /**
- *
+ * Boots an embedded Fabric3 runtime and runs integration tests for the current module and other configured modules.
  */
 public class Fabric3TestTask extends DefaultTask {
 
     @TaskAction
     public void fabric3Test() {
+        getLogger().log(LogLevel.INFO, "Starting Fabric3");
         System.out.println("Hello from Fabric3");
     }
 }
