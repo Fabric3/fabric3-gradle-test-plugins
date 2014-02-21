@@ -35,7 +35,7 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest.aether;
+package org.fabric3.gradle.plugin.itest.resolver;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -84,9 +84,6 @@ public class AetherBootstrap {
         File file = new File(registry.get(RepositoryHandler.class).mavenLocal().getUrl().getPath());
         LocalRepository localRepo = new LocalRepository(file);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
-        //  session.setTransferListener(new ConsoleTransferListener());
-        //  session.setRepositoryListener(new ConsoleRepositoryListener());
-
         return session;
     }
 

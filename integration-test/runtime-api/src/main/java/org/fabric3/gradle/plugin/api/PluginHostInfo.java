@@ -35,16 +35,12 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest.runtime;
+package org.fabric3.gradle.plugin.api;
 
-import org.fabric3.gradle.plugin.api.PluginRuntime;
+import org.fabric3.api.host.runtime.HostInfo;
 
 /**
  *
  */
-public class PluginRuntimeBootstrap {
-    private static final String PLUGIN_RUNTIME_IMPL = "org.fabric3.gradle.plugin.runtime.impl.PluginRuntimeImpl";
-
-    PluginRuntime runtime;
-
+public interface PluginHostInfo extends HostInfo {
 }

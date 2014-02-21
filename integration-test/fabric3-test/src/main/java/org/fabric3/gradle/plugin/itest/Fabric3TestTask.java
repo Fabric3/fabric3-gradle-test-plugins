@@ -37,47 +37,205 @@
 */
 package org.fabric3.gradle.plugin.itest;
 
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.resolution.ArtifactRequest;
-import org.eclipse.aether.resolution.ArtifactResolutionException;
-import org.eclipse.aether.resolution.ArtifactResult;
-import org.fabric3.gradle.plugin.itest.aether.AetherBootstrap;
+import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.fabric3.api.host.Names;
+import org.fabric3.api.host.classloader.MaskingClassLoader;
+import org.fabric3.api.host.contribution.ContributionNotFoundException;
+import org.fabric3.api.host.contribution.ContributionService;
+import org.fabric3.api.host.contribution.ContributionSource;
+import org.fabric3.api.host.contribution.InstallException;
+import org.fabric3.api.host.contribution.StoreException;
+import org.fabric3.api.host.domain.DeploymentException;
+import org.fabric3.api.host.domain.Domain;
+import org.fabric3.api.host.runtime.HiddenPackages;
+import org.fabric3.api.host.runtime.InitializationException;
+import org.fabric3.api.host.util.FileHelper;
+import org.fabric3.gradle.plugin.api.PluginRuntime;
+import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
+import org.fabric3.gradle.plugin.itest.resolver.Resolver;
+import org.fabric3.gradle.plugin.itest.runtime.PluginBootConfiguration;
+import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
+import org.fabric3.gradle.plugin.itest.runtime.PluginRuntimeBooter;
+import org.fabric3.gradle.plugin.itest.util.ClassLoaderHelper;
 import org.gradle.api.DefaultTask;
-import org.gradle.api.logging.LogLevel;
+import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.service.ServiceRegistry;
+import org.gradle.mvn3.org.apache.maven.plugin.MojoExecutionException;
 
 /**
  * Boots an embedded Fabric3 runtime and runs integration tests for the current module and other configured modules.
  */
 public class Fabric3TestTask extends DefaultTask {
 
+    // FIXME configure properties
+    private String[] hiddenPackages = HiddenPackages.getPackages();
+    private String systemConfig;
+    private String runtimeVersion = "2.5.0-SNAPSHOT";
+
     @TaskAction
-    public void fabric3Test() {
-        getLogger().log(LogLevel.INFO, "Starting Fabric3");
+    public void fabric3Test() throws InitializationException {
+        Logger logger = getLogger();
+        logger.lifecycle("Starting Fabric3");
 
         ServiceRegistry registry = getServices();
         RepositorySystem system = AetherBootstrap.getRepositorySystem();
         RepositorySystemSession session = AetherBootstrap.getRepositorySystemSession(system, registry);
-
-        DefaultArtifact artifact = new DefaultArtifact("org.codehaus.fabric3", "fabric3-api", "jar", "1.9.5");
-
-
         List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
 
+        Resolver resolver = new Resolver(system, session, repositories, runtimeVersion);
+
+        PluginBootConfiguration configuration = createBootConfiguration(resolver);
+
+        Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
+
+        PluginRuntimeBooter booter = new PluginRuntimeBooter(configuration);
+
+        PluginRuntime runtime = booter.boot();
         try {
-            ArtifactRequest request = new ArtifactRequest(artifact, repositories, null);
-            ArtifactResult result = system.resolveArtifact(session, request);
-            System.out.println(":::::::::" + result.getArtifact().getFile());
-        } catch (ArtifactResolutionException e) {
+            // load the contributions
+            //            deployContributions(runtime, artifactHelper);
+            //            TestDeployer deployer = new TestDeployer(compositeNamespace, compositeName, buildDirectory, getLog());
+            //            boolean continueDeployment = deployer.deploy(runtime, errorText);
+            //            if (!continueDeployment) {
+            //                return;
+            //            }
+            //            TestRunner runner = new TestRunner(reportsDirectory, trimStackTrace, getLog());
+            //            runner.executeTests(runtime);
+        } finally {
+            try {
+                tryLatch(runtime);
+                booter.shutdown();
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+    }
+
+    /**
+     * Waits on a latch component if one is configured for the test run.
+     *
+     * @param runtime the runtime
+     */
+    private void tryLatch(PluginRuntime runtime) {
+        Object latchComponent = runtime.getComponent(Object.class, PluginConstants.TEST_LATCH_SERVICE);
+        if (latchComponent != null) {
+            Class<?> type = latchComponent.getClass();
+            try {
+                Method method = type.getDeclaredMethod("await");
+                getLogger().lifecycle("Waiting on Fabric3 runtime latch");
+                method.invoke(latchComponent);
+                getLogger().lifecycle("Fabric3 runtime latch released");
+            } catch (NoSuchMethodException e) {
+                getLogger().error("Found latch service " + type + " but it does not declare an await() method");
+            } catch (SecurityException e) {
+                getLogger().error("Security exception introspecting latch service", e);
+            } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
+                getLogger().error("Exception attempting to wait on latch service", e);
+            }
+        }
+    }
+
+    /**
+     * Resolves and deploys configured contributions.
+     *
+     * @param runtime the runtime
+     * @throws MojoExecutionException if a deployment error occurs
+     */
+    private void deployContributions(PluginRuntime runtime) throws MojoExecutionException {
+        //        if (contributions.length <= 0) {
+        //            return;
+        //        }
+        try {
+            ContributionService contributionService = runtime.getComponent(ContributionService.class, Names.CONTRIBUTION_SERVICE_URI);
+            Domain domain = runtime.getComponent(Domain.class, Names.APPLICATION_DOMAIN_URI);
+            List<ContributionSource> sources = new ArrayList<>();
+            //            for (Dependency contribution : contributions) {
+            //                Artifact artifact = artifactHelper.resolve(contribution);
+            //                URL url = artifact.getFile().toURI().toURL();
+            //                URI uri = URI.create(new File(url.getFile()).getName());
+            //                ContributionSource source = new FileContributionSource(uri, url, -1, true);
+            //                sources.add(source);
+            //            }
+            List<URI> uris = contributionService.store(sources);
+            contributionService.install(uris);
+            domain.include(uris);
+        } catch (ContributionNotFoundException | InstallException | DeploymentException | StoreException e) {
+            throw new MojoExecutionException("Error installing contributions", e);
+        }
+    }
+
+    /**
+     * Recursively cleans the F3 temporary directory.
+     */
+    private static void clearTempFiles() {
+        File f3TempDir = new File(System.getProperty("java.io.tmpdir"), ".f3");
+        try {
+            FileHelper.deleteDirectory(f3TempDir);
+        } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
+    /**
+     * Creates the configuration to boot the Maven runtime, including resolving dependencies.
+     *
+     * @return the boot configuration
+     */
+    private PluginBootConfiguration createBootConfiguration(Resolver resolver) {
+        Set<Artifact> shared = Collections.emptySet(); // TODO FIXME
+        try {
+            Set<Artifact> hostArtifacts = resolver.resolveHostArtifacts(shared);
+            Set<Artifact> runtimeArtifacts = resolver.resolveRuntimeArtifacts();
+
+            //        List<ContributionSource> runtimeExtensions = resolver.resolveRuntimeExtensions(extensions, profiles);
+            //
+            //        Set<URL> moduleDependencies = resolver.resolveModuleDependencies(hostArtifacts);
+            //
+            ClassLoader parentClassLoader = createParentClassLoader();
+            //
+            ClassLoader hostClassLoader = ClassLoaderHelper.createHostClassLoader(parentClassLoader, hostArtifacts);
+            ClassLoader bootClassLoader = ClassLoaderHelper.createBootClassLoader(hostClassLoader, runtimeArtifacts);
+
+            PluginBootConfiguration configuration = new PluginBootConfiguration();
+            configuration.setBootClassLoader(bootClassLoader);
+            configuration.setHostClassLoader(hostClassLoader);
+            configuration.setLogger(getLogger());
+            //
+            //        configuration.setExtensions(runtimeExtensions);
+            //        configuration.setModuleDependencies(moduleDependencies);
+            //
+            File buildDir = getProject().getBuildDir();
+            configuration.setOutputDirectory(buildDir);
+            configuration.setSystemConfig(systemConfig);
+            return configuration;
+        } catch (DependencyResolutionException e) {
+            // FIXME  throw another exception
+            throw new AssertionError(e);
+        }
+    }
+
+    private ClassLoader createParentClassLoader() {
+        ClassLoader parentClassLoader = getClass().getClassLoader();
+        if (hiddenPackages.length > 0) {
+            // mask hidden JDK and system classpath packages
+            parentClassLoader = new MaskingClassLoader(parentClassLoader, hiddenPackages);
+        }
+        return parentClassLoader;
     }
 
 }

@@ -38,9 +38,13 @@
 package org.fabric3.gradle.plugin.api;
 
 import org.fabric3.api.host.runtime.Fabric3Runtime;
+import org.fabric3.api.host.runtime.HostInfo;
 
 /**
  *
  */
 public interface PluginRuntime extends Fabric3Runtime {
+
+    HostInfo getHostInfo();
+
 }

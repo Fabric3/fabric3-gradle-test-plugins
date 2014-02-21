@@ -35,18 +35,30 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.runtime.impl;
+package org.fabric3.gradle.plugin.itest.runtime;
 
-import org.fabric3.api.host.runtime.RuntimeConfiguration;
-import org.fabric3.fabric.runtime.DefaultRuntime;
-import org.fabric3.gradle.plugin.api.PluginRuntime;
+import java.net.URI;
 
 /**
  *
  */
-public class PluginRuntimeImpl  extends DefaultRuntime implements PluginRuntime {
+@Deprecated
+public interface PluginConstants {
 
-    public PluginRuntimeImpl(RuntimeConfiguration configuration) {
-        super(configuration);
-    }
+    /**
+     * The default domain name for Maven tests.
+     */
+    String DOMAIN = "fabric3://domain";
+
+    /**
+     * The name for the user-provided latch service that services a runtime synchronization mechanism when performing integration tests that require
+     * asynchronous communication.
+     */
+    URI TEST_LATCH_SERVICE = URI.create(DOMAIN + "/F3LatchService");
+
+    /**
+     * The JUnit version.
+     */
+    String JUNIT_VERSION = "4.11";
+
 }
