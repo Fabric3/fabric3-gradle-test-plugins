@@ -35,20 +35,10 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest;
-
-import org.gradle.api.DefaultTask;
-import org.gradle.api.logging.LogLevel;
-import org.gradle.api.tasks.TaskAction;
+package org.fabric3.gradle.plugin.runtime.impl;
 
 /**
- * Boots an embedded Fabric3 runtime and runs integration tests for the current module and other configured modules.
+ *
  */
-public class Fabric3TestTask extends DefaultTask {
-
-    @TaskAction
-    public void fabric3Test() {
-        getLogger().log(LogLevel.INFO, "Starting Fabric3");
-        System.out.println("Hello from Fabric3");
-    }
+public class PluginRuntimeImpl { //} extends DefaultRuntime implements PluginRuntime {
 }

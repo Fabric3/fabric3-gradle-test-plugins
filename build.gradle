@@ -1,3 +1,5 @@
+import java.text.SimpleDateFormat
+
 /**
  * Build for Fabric3 Gradle plugins
  */
@@ -10,7 +12,13 @@ allprojects {
     }
 
 }
-subprojects {
+
+def distributions() {
+    // define projects that are distributions, i.e. they contain source files; project parent directories will be ignored
+    return subprojects.findAll { new File(it.projectDir, "src").exists() }
+}
+
+configure(distributions()) {
     apply plugin: 'java'
     apply plugin: 'maven'
     apply plugin: 'signing'
@@ -48,8 +56,7 @@ subprojects {
 
     signing {
         required {
-            !version.endsWith('SNAPSHOT') &&
-            gradle.taskGraph.hasTask('uploadArchives')
+            !version.endsWith('SNAPSHOT') && gradle.taskGraph.hasTask('uploadArchives')
         }
         sign configurations.archives
     }
