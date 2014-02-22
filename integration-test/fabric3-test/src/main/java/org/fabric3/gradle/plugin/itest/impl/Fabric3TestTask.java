@@ -70,6 +70,7 @@ import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 import org.fabric3.gradle.plugin.itest.aether.AetherBootstrap;
+import org.fabric3.gradle.plugin.itest.deployer.Deployer;
 import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
 import org.fabric3.gradle.plugin.itest.resolver.Resolver;
 import org.fabric3.gradle.plugin.itest.runtime.PluginBootConfiguration;
@@ -90,6 +91,10 @@ public class Fabric3TestTask extends DefaultTask {
     private String[] hiddenPackages = HiddenPackages.getPackages();
     private String systemConfig;
     private String runtimeVersion = "2.5.0-SNAPSHOT";
+    private String compositeNamespace = "urn:fabric3.org";
+    private String compositeName = "TestComposite";
+    private String errorText;
+
 
     @TaskAction
     public void fabric3Test() throws InitializationException, Fabric3PluginException {
@@ -107,11 +112,12 @@ public class Fabric3TestTask extends DefaultTask {
             // load the contributions
             // TODO enable:
             //  deployContributions(runtime);
-            //            TestDeployer deployer = new TestDeployer(compositeNamespace, compositeName, buildDirectory, getLog());
-            //            boolean continueDeployment = deployer.deploy(runtime, errorText);
-            //            if (!continueDeployment) {
-            //                return;
-            //            }
+            File buildDirectory = getProject().getBuildDir();
+            Deployer deployer = new Deployer(compositeNamespace, compositeName, buildDirectory, logger);
+            boolean continueDeployment = deployer.deploy(runtime, errorText);
+            if (!continueDeployment) {
+                return;
+            }
             //            TestRunner runner = new TestRunner(reportsDirectory, trimStackTrace, getLog());
             //            runner.executeTests(runtime);
         } finally {
@@ -204,7 +210,6 @@ public class Fabric3TestTask extends DefaultTask {
         List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
 
         Resolver resolver = new Resolver(system, session, repositories, runtimeVersion);
-
 
         Set<Artifact> shared = Collections.emptySet(); // TODO FIXME add as a property
         Set<Artifact> extensions = Collections.emptySet(); // TODO FIXME add as a property
