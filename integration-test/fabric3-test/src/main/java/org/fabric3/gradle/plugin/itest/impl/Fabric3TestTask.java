@@ -35,7 +35,7 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest;
+package org.fabric3.gradle.plugin.itest.impl;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,8 +66,10 @@ import org.fabric3.api.host.domain.Domain;
 import org.fabric3.api.host.runtime.HiddenPackages;
 import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.FileHelper;
+import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
-import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
+import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
+import org.fabric3.gradle.plugin.itest.aether.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
 import org.fabric3.gradle.plugin.itest.resolver.Resolver;
 import org.fabric3.gradle.plugin.itest.runtime.PluginBootConfiguration;
@@ -93,21 +95,14 @@ public class Fabric3TestTask extends DefaultTask {
     public void fabric3Test() throws InitializationException, Fabric3PluginException {
         Logger logger = getLogger();
         logger.lifecycle("Starting Fabric3");
-        boolean offline = getProject().getGradle().getStartParameter().isOffline();
-        ServiceRegistry registry = getServices();
-        RepositorySystem system = AetherBootstrap.getRepositorySystem();
-        RepositorySystemSession session = AetherBootstrap.getRepositorySystemSession(system, registry, offline);
-        List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
 
-        Resolver resolver = new Resolver(system, session, repositories, runtimeVersion);
-
-        PluginBootConfiguration configuration = createBootConfiguration(resolver);
+        PluginBootConfiguration configuration = createBootConfiguration();
 
         Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
 
         PluginRuntimeBooter booter = new PluginRuntimeBooter(configuration);
 
-        PluginRuntime runtime = booter.boot();
+        PluginRuntime<PluginHostInfo> runtime = booter.boot();
         try {
             // load the contributions
             // TODO enable:
@@ -134,7 +129,7 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @param runtime the runtime
      */
-    private void tryLatch(PluginRuntime runtime) {
+    private void tryLatch(PluginRuntime<PluginHostInfo> runtime) {
         Object latchComponent = runtime.getComponent(Object.class, PluginConstants.TEST_LATCH_SERVICE);
         if (latchComponent != null) {
             Class<?> type = latchComponent.getClass();
@@ -158,7 +153,7 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @param runtime the runtime
      */
-    private void deployContributions(PluginRuntime runtime) throws Fabric3PluginException {
+    private void deployContributions(PluginRuntime<PluginHostInfo> runtime) throws Fabric3PluginException {
         //        if (contributions.length <= 0) {
         //            return;
         //        }
@@ -198,7 +193,19 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @return the boot configuration
      */
-    private PluginBootConfiguration createBootConfiguration(Resolver resolver) {
+    private PluginBootConfiguration createBootConfiguration() {
+
+        RepositorySystem system = AetherBootstrap.getRepositorySystem();
+
+        boolean offline = getProject().getGradle().getStartParameter().isOffline();
+        ServiceRegistry registry = getServices();
+        RepositorySystemSession session = AetherBootstrap.getRepositorySystemSession(system, registry, offline);
+
+        List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
+
+        Resolver resolver = new Resolver(system, session, repositories, runtimeVersion);
+
+
         Set<Artifact> shared = Collections.emptySet(); // TODO FIXME add as a property
         Set<Artifact> extensions = Collections.emptySet(); // TODO FIXME add as a property
         Set<Artifact> profiles = Collections.emptySet(); // TODO FIXME add as a property
@@ -226,6 +233,8 @@ public class Fabric3TestTask extends DefaultTask {
             File buildDir = getProject().getBuildDir();
             configuration.setOutputDirectory(buildDir);
             configuration.setSystemConfig(systemConfig);
+            configuration.setRepositorySession(session);
+            configuration.setRepositorySystem(system);
             return configuration;
         } catch (DependencyResolutionException | ArtifactResolutionException e) {
             // FIXME  throw another exception

@@ -35,23 +35,39 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest;
+package org.fabric3.gradle.plugin.api;
+
+import javax.management.MBeanServer;
+
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.fabric3.api.host.monitor.DestinationRouter;
+import org.fabric3.api.host.runtime.HostInfo;
+import org.fabric3.api.host.runtime.RuntimeConfiguration;
 
 /**
  *
  */
-public class Fabric3PluginException extends Exception {
-    private static final long serialVersionUID = -7485267983316644088L;
+// FIXME merge with Maven deploy functionality into common superclass
+public class PluginRuntimeConfiguration extends RuntimeConfiguration {
+    private RepositorySystem system;
+    private RepositorySystemSession session;
 
-    public Fabric3PluginException(String message) {
-        super(message);
+    public PluginRuntimeConfiguration(HostInfo hostInfo,
+                                      MBeanServer mBeanServer,
+                                      DestinationRouter router,
+                                      RepositorySystem system,
+                                      RepositorySystemSession session) {
+        super(hostInfo, mBeanServer, router);
+        this.system = system;
+        this.session = session;
     }
 
-    public Fabric3PluginException(String message, Throwable cause) {
-        super(message, cause);
+    public RepositorySystem getSystem() {
+        return system;
     }
 
-    public Fabric3PluginException(Throwable cause) {
-        super(cause);
+    public RepositorySystemSession getSession() {
+        return session;
     }
 }

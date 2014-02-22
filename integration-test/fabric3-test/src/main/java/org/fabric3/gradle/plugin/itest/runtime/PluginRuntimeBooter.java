@@ -53,6 +53,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
 import org.fabric3.api.host.Names;
 import org.fabric3.api.host.contribution.ContributionSource;
 import org.fabric3.api.host.os.OperatingSystem;
@@ -61,7 +63,6 @@ import org.fabric3.api.host.runtime.BootstrapFactory;
 import org.fabric3.api.host.runtime.BootstrapHelper;
 import org.fabric3.api.host.runtime.BootstrapService;
 import org.fabric3.api.host.runtime.InitializationException;
-import org.fabric3.api.host.runtime.RuntimeConfiguration;
 import org.fabric3.api.host.runtime.RuntimeCoordinator;
 import org.fabric3.api.host.runtime.ShutdownException;
 import org.fabric3.api.host.stream.InputStreamSource;
@@ -69,6 +70,7 @@ import org.fabric3.api.host.stream.Source;
 import org.fabric3.api.host.util.FileHelper;
 import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
+import org.fabric3.gradle.plugin.api.PluginRuntimeConfiguration;
 import org.gradle.api.logging.Logger;
 import org.w3c.dom.Document;
 
@@ -83,6 +85,8 @@ public class PluginRuntimeBooter {
     private ClassLoader bootClassLoader;
     private ClassLoader hostClassLoader;
     private Set<URL> moduleDependencies;
+    private RepositorySystem system;
+    private RepositorySystemSession session;
     private Logger logger;
 
     private RuntimeCoordinator coordinator;
@@ -95,14 +99,16 @@ public class PluginRuntimeBooter {
         hostClassLoader = configuration.getHostClassLoader();
         moduleDependencies = configuration.getModuleDependencies();
         contributions = configuration.getExtensions();
+        system = configuration.getRepositorySystem();
+        session = configuration.getRepositorySession();
         logger = configuration.getLogger();
     }
 
-    public PluginRuntime boot() throws InitializationException {
+    public PluginRuntime<PluginHostInfo> boot() throws InitializationException {
         BootstrapService bootstrapService = BootstrapFactory.getService(bootClassLoader);
         Document systemConfig = getSystemConfig(bootstrapService);
 
-        PluginRuntime runtime = createRuntime(bootstrapService, systemConfig);
+        PluginRuntime<PluginHostInfo> runtime = createRuntime(bootstrapService, systemConfig);
 
         Map<String, String> exportedPackages = new HashMap<>();
         exportedPackages.put("org.fabric3.test.spi", Names.VERSION);
@@ -127,7 +133,7 @@ public class PluginRuntimeBooter {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private PluginRuntime createRuntime(BootstrapService bootstrapService, Document systemConfig) throws InitializationException {
+    private PluginRuntime<PluginHostInfo> createRuntime(BootstrapService bootstrapService, Document systemConfig) throws InitializationException {
         String environment = bootstrapService.parseEnvironment(systemConfig);
 
         File tempDir = new File(System.getProperty("java.io.tmpdir"), ".f3");
@@ -150,7 +156,7 @@ public class PluginRuntimeBooter {
         MBeanServer mBeanServer = MBeanServerFactory.createMBeanServer(PluginConstants.DOMAIN);
 
         PluginDestinationRouter router = new PluginDestinationRouter(logger);
-        RuntimeConfiguration configuration = new RuntimeConfiguration(hostInfo, mBeanServer, router);
+        PluginRuntimeConfiguration configuration = new PluginRuntimeConfiguration(hostInfo, mBeanServer, router, system, session);
 
         return instantiateRuntime(configuration, bootClassLoader);
     }
@@ -175,10 +181,11 @@ public class PluginRuntimeBooter {
         logger.lifecycle("Fabric3 stopped");
     }
 
-    private PluginRuntime instantiateRuntime(RuntimeConfiguration configuration, ClassLoader cl) {
+    @SuppressWarnings("unchecked")
+    private PluginRuntime<PluginHostInfo> instantiateRuntime(PluginRuntimeConfiguration configuration, ClassLoader cl) {
         try {
             Class<?> implClass = cl.loadClass(PLUGIN_RUNTIME_IMPL);
-            return PluginRuntime.class.cast(implClass.getConstructor(RuntimeConfiguration.class).newInstance(configuration));
+            return PluginRuntime.class.cast(implClass.getConstructor(PluginRuntimeConfiguration.class).newInstance(configuration));
         } catch (ClassNotFoundException | NoSuchMethodException | InvocationTargetException | InstantiationException | IllegalAccessException e) {
             // programming error
             throw new AssertionError(e);

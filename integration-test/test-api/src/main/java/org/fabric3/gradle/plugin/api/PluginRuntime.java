@@ -37,14 +37,31 @@
 */
 package org.fabric3.gradle.plugin.api;
 
+import javax.xml.namespace.QName;
+import java.net.URL;
+
+import org.fabric3.api.host.contribution.ContributionException;
+import org.fabric3.api.host.domain.DeploymentException;
 import org.fabric3.api.host.runtime.Fabric3Runtime;
 import org.fabric3.api.host.runtime.HostInfo;
 
 /**
  *
  */
-public interface PluginRuntime extends Fabric3Runtime {
+// FIXME merge with Maven deploy functionality into common superclass
+public interface PluginRuntime<T extends HostInfo> extends Fabric3Runtime {
 
-    HostInfo getHostInfo();
+    T getHostInfo();
+
+    /**
+     * Deploys a composite by qualified name contained in the Maven module the runtime is currently executing for.
+     *
+     * @param base      the module output directory location
+     * @param composite the composite qname to activate
+     * @throws ContributionException if a contribution is thrown. The cause may a ValidationException resulting from  errors in the contribution. In this case
+     *                               the errors should be reported back to the user.
+     * @throws DeploymentException   if there is an error activating the test composite
+     */
+    void deploy(URL base, QName composite) throws ContributionException, DeploymentException;
 
 }

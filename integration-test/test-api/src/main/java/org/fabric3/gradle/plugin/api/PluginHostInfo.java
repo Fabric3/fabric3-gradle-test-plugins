@@ -37,10 +37,17 @@
 */
 package org.fabric3.gradle.plugin.api;
 
+import java.net.URL;
+import java.util.Set;
+
 import org.fabric3.api.host.runtime.HostInfo;
 
 /**
  *
  */
+// FIXME merge with Maven deploy functionality into common superclass
 public interface PluginHostInfo extends HostInfo {
+
+    Set<URL> getDependencyUrls();
+
 }

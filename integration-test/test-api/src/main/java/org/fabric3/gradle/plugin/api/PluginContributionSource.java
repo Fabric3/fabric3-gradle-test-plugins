@@ -35,17 +35,58 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest;
+package org.fabric3.gradle.plugin.api;
 
-import org.gradle.api.Plugin;
-import org.gradle.api.Project;
+import java.net.URI;
+import java.net.URL;
+
+import org.fabric3.api.host.contribution.ContributionSource;
+import org.fabric3.api.host.stream.Source;
+import org.fabric3.api.host.stream.UrlSource;
 
 /**
- * The Fabric3 integration test plugin.
+ *
  */
-public class Fabric3TestPlugin implements Plugin<Project> {
+// FIXME merge with Maven deploy functionality into common superclass
+public class PluginContributionSource implements ContributionSource {
+    public static final String CONTENT_TYPE = "application/vnd.fabric3.plugin-project";
+    private URI uri;
+    private URL url;
+    private long timestamp;
+    private Source source;
 
-    public void apply(Project project) {
-        project.getTasks().create("fabric3Test", Fabric3TestTask.class);
+    public PluginContributionSource(URI uri, URL url) {
+        this.uri = uri;
+        this.url = url;
+        this.timestamp = System.currentTimeMillis();
+        this.source = new UrlSource(url);
+    }
+
+    public URI getUri() {
+        return uri;
+    }
+
+    public boolean persist() {
+        return false;
+    }
+
+    public boolean isExtension() {
+        return false;
+    }
+
+    public Source getSource() {
+        return source;
+    }
+
+    public URL getLocation() {
+        return url;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public String getContentType() {
+        return CONTENT_TYPE;
     }
 }

@@ -35,23 +35,17 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest;
+package org.fabric3.gradle.plugin.itest.impl;
+
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
 
 /**
- *
+ * The Fabric3 integration test plugin.
  */
-public class Fabric3PluginException extends Exception {
-    private static final long serialVersionUID = -7485267983316644088L;
+public class Fabric3TestPlugin implements Plugin<Project> {
 
-    public Fabric3PluginException(String message) {
-        super(message);
-    }
-
-    public Fabric3PluginException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
-    public Fabric3PluginException(Throwable cause) {
-        super(cause);
+    public void apply(Project project) {
+        project.getTasks().create("fabric3Test", Fabric3TestTask.class);
     }
 }

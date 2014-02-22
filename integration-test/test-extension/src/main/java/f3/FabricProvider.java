@@ -43,6 +43,8 @@ import org.fabric3.api.Namespaces;
 import org.fabric3.api.annotation.model.Provides;
 import org.fabric3.api.model.type.builder.CompositeBuilder;
 import org.fabric3.api.model.type.component.Composite;
+import org.fabric3.gradle.plugin.contribution.PluginContributionProcessor;
+import org.fabric3.gradle.plugin.contribution.ProjectClasspathProcessor;
 import org.fabric3.gradle.plugin.test.WireHolderImpl;
 import org.fabric3.spi.model.type.system.SystemComponentDefinitionBuilder;
 
@@ -56,6 +58,8 @@ public class FabricProvider {
     public static Composite getComposite() {
         CompositeBuilder compositeBuilder = CompositeBuilder.newBuilder(QNAME);
         compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(WireHolderImpl.class).build());
+        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(ProjectClasspathProcessor.class).build());
+        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(PluginContributionProcessor.class).build());
         return compositeBuilder.build();
     }
 }

@@ -50,7 +50,7 @@ import org.fabric3.api.host.classloader.DelegatingResourceClassLoader;
 /**
  *
  */
-@Deprecated
+// FIXME merge with Maven
 public class ClassLoaderHelper {
     /**
      * Creates the classloader to boot the runtime.

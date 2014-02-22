@@ -35,23 +35,42 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.itest;
+package org.fabric3.gradle.plugin.contribution;
+
+import java.io.File;
+
+import org.fabric3.api.host.failure.ValidationFailure;
 
 /**
- *
+ * Validation warning indicating that the possible contribution file with the given File could not be loaded.
  */
-public class Fabric3PluginException extends Exception {
-    private static final long serialVersionUID = -7485267983316644088L;
+// FIXME merge with Maven deploy functionality into common superclass
+public class ContributionIndexingFailure extends ValidationFailure {
+    private File file;
+    private Exception ex;
 
-    public Fabric3PluginException(String message) {
-        super(message);
+    public ContributionIndexingFailure(File file, Exception ex) {
+        this.file = file;
+        this.ex = ex;
     }
 
-    public Fabric3PluginException(String message, Throwable cause) {
-        super(message, cause);
+    /**
+     * Retrieves the message for the failure that includes both the standard ValidationFailure message along with details of the exception.
+     *
+     * @return the message.
+     */
+    public String getMessage() {
+        if (ex == null) {
+            return "Error indexing file " + file;
+        }
+        return "Error indexing file " + file + "\n " + ex;
     }
 
-    public Fabric3PluginException(Throwable cause) {
-        super(cause);
+    public String getShortMessage() {
+        if (ex == null) {
+            return "Error indexing file " + file;
+        }
+        return "Error indexing file " + file + ":  " + ex.getMessage();
     }
+
 }

@@ -5,6 +5,9 @@ dependencies {
     compile group: 'org.codehaus.fabric3', name: 'fabric3-host-api', version: fabric3Version
     compile group: 'org.codehaus.fabric3', name: 'fabric3-model-api', version: fabric3Version
 
+    compile group: 'org.eclipse.aether', name: 'aether-api', version: aetherVersion
+
+
 }
 
 

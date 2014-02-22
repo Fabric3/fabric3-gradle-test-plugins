@@ -42,7 +42,7 @@ import java.net.URI;
 /**
  *
  */
-@Deprecated
+// FIXME merge with Maven
 public interface PluginConstants {
 
     /**

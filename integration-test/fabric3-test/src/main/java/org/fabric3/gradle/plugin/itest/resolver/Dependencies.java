@@ -55,7 +55,7 @@ import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
  * <p/>
  * Will need to provide an extension mechanism to add specific extensions.
  */
-@Deprecated
+// FIXME merge with Maven
 public class Dependencies {
 
     public static final String F3_GORUP_ID = "org.codehaus.fabric3";

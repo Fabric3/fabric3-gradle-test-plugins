@@ -43,6 +43,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
 import org.fabric3.api.host.contribution.ContributionSource;
 import org.gradle.api.logging.Logger;
 
@@ -57,6 +59,8 @@ public class PluginBootConfiguration {
     private Set<URL> moduleDependencies = Collections.emptySet();
     private List<ContributionSource> extensions = Collections.emptyList();
     private Logger logger;
+    private RepositorySystem repositorySystem;
+    private RepositorySystemSession repositorySession;
 
     public File getOutputDirectory() {
         return outputDirectory;
@@ -112,5 +116,21 @@ public class PluginBootConfiguration {
 
     public void setLogger(Logger logger) {
         this.logger = logger;
+    }
+
+    public RepositorySystem getRepositorySystem() {
+        return repositorySystem;
+    }
+
+    public void setRepositorySystem(RepositorySystem repositorySystem) {
+        this.repositorySystem = repositorySystem;
+    }
+
+    public RepositorySystemSession getRepositorySession() {
+        return repositorySession;
+    }
+
+    public void setRepositorySession(RepositorySystemSession repositorySession) {
+        this.repositorySession = repositorySession;
     }
 }
