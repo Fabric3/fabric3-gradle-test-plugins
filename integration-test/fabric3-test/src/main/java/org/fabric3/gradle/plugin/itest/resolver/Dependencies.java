@@ -45,7 +45,15 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
 
 /**
+ * Notes on deprecation: Maven Dependencies class includes the following where this one doesn't:
  *
+ * - maven-extension as a core extension
+ *
+ * This class includes the following where the Maven version doesn't:
+ *
+ *  - fabric3-test-spi
+ *
+ * Will need to provide an extension mechanism to add specific extensions.
  */
 @Deprecated
 public class Dependencies {
@@ -64,6 +72,9 @@ public class Dependencies {
         Artifact artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-jdk-proxy", "jar", runtimeVersion);
         extensions.add(artifact);
 
+        artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-test-spi", "jar", runtimeVersion);
+        extensions.add(artifact);
+
         artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-channel-impl", "jar", runtimeVersion);
         extensions.add(artifact);
 
@@ -80,9 +91,6 @@ public class Dependencies {
         extensions.add(artifact);
 
         artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-execution", "jar", runtimeVersion);
-        extensions.add(artifact);
-
-        artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-maven-extension", "jar", runtimeVersion);
         extensions.add(artifact);
 
         artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-junit", "jar", runtimeVersion);

@@ -43,6 +43,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.apache.maven.repository.internal.MavenRepositorySystemUtils;
+import org.eclipse.aether.DefaultRepositoryCache;
 import org.eclipse.aether.DefaultRepositorySystemSession;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
@@ -79,11 +80,15 @@ public class AetherBootstrap {
         return locator.getService(RepositorySystem.class);
     }
 
-    public static DefaultRepositorySystemSession getRepositorySystemSession(RepositorySystem system, ServiceRegistry registry) {
+    public static DefaultRepositorySystemSession getRepositorySystemSession(RepositorySystem system, ServiceRegistry registry, boolean offline) {
         DefaultRepositorySystemSession session = MavenRepositorySystemUtils.newSession();
         File file = new File(registry.get(RepositoryHandler.class).mavenLocal().getUrl().getPath());
         LocalRepository localRepo = new LocalRepository(file);
         session.setLocalRepositoryManager(system.newLocalRepositoryManager(session, localRepo));
+        session.setCache(new DefaultRepositoryCache());
+        session.setOffline(offline);
+        // avoid unnecessary snapshot resolution
+        session.setConfigProperty("aether.artifactResolver.snapshotNormalization", false);
         return session;
     }
 

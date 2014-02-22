@@ -37,6 +37,11 @@
 */
 package org.fabric3.gradle.plugin.itest.resolver;
 
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -47,10 +52,14 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactRequest;
+import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.eclipse.aether.resolution.DependencyRequest;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.eclipse.aether.resolution.DependencyResult;
+import org.fabric3.api.host.contribution.ContributionSource;
+import org.fabric3.api.host.contribution.FileContributionSource;
 
 /**
  *
@@ -70,6 +79,7 @@ public class Resolver {
     }
 
     public Set<Artifact> resolveHostArtifacts(Set<Artifact> shared) throws DependencyResolutionException {
+        long start = System.currentTimeMillis();
         Set<Artifact> hostArtifacts = new HashSet<>();
         Set<Artifact> hostDependencies = Dependencies.getHostDependencies(runtimeVersion);
         for (Artifact artifact : hostDependencies) {
@@ -82,14 +92,32 @@ public class Resolver {
                 hostArtifacts.addAll(resolveArtifacts(artifact));
             }
         }
+        System.out.println("Resolve host:::::" + (System.currentTimeMillis() - start));
         return hostArtifacts;
     }
 
     public Set<Artifact> resolveRuntimeArtifacts() throws DependencyResolutionException {
-        return resolveArtifacts(Dependencies.getMainRuntimeModule(runtimeVersion));
+        long start = System.currentTimeMillis();
+        Set<Artifact> artifacts = resolveArtifacts(Dependencies.getMainRuntimeModule(runtimeVersion));
+        System.out.println("Resolve runtime:::::" + (System.currentTimeMillis() - start));
+        return artifacts;
     }
 
-    private Set<Artifact>  resolveArtifacts(Artifact artifact) throws DependencyResolutionException {
+    public List<ContributionSource> resolveRuntimeExtensions(Set<Artifact> extensions, Set<Artifact> profiles) throws ArtifactResolutionException {
+        long start = System.currentTimeMillis();
+        Set<Artifact> expandedExtensions = new HashSet<>();
+        expandedExtensions.addAll(Dependencies.getCoreExtensions(runtimeVersion));
+        expandedExtensions.addAll(extensions);
+        // FXIME
+        //        Set<Artifact> expandedProfiles = expandProfileExtensions(profiles);
+        //        expandedExtensions.addAll(expandedProfiles);
+
+        Set<URL> extensionUrls = resolve(expandedExtensions);
+        System.out.println("Resolve extensions:::::" + (System.currentTimeMillis() - start));
+        return createContributionSources(extensionUrls);
+    }
+
+    private Set<Artifact> resolveArtifacts(Artifact artifact) throws DependencyResolutionException {
         CollectRequest collectRequest = new CollectRequest();
 
         Dependency root = new Dependency(artifact, "compile");
@@ -106,6 +134,45 @@ public class Resolver {
         }
         return results;
 
+    }
+
+    private Set<URL> resolve(Set<Artifact> artifacts) throws ArtifactResolutionException {
+        Set<URL> urls = new HashSet<>();
+        if (artifacts != null) {
+            for (Artifact artifact : artifacts) {
+                Artifact resolvedArtifact = resolveArtifact(artifact);
+                try {
+                    urls.add(resolvedArtifact.getFile().toURI().toURL());
+                } catch (MalformedURLException e) {
+                    throw new AssertionError();
+                }
+            }
+        }
+        return urls;
+    }
+
+    /**
+     * Resolves the root dependency to the local artifact.
+     *
+     * @return Resolved artifact.
+     * @throws ArtifactResolutionException if unable to resolve any dependencies.
+     */
+    public Artifact resolveArtifact(Artifact artifact) throws ArtifactResolutionException {
+        ArtifactRequest request = new ArtifactRequest(artifact, repositories, null);
+        ArtifactResult result = system.resolveArtifact(session, request);
+        return result.getArtifact();
+
+    }
+
+    private List<ContributionSource> createContributionSources(Set<URL> urls) {
+        List<ContributionSource> sources = new ArrayList<>();
+        for (URL extensionUrl : urls) {
+            // it's ok to assume archives are uniquely named since most server environments have a single deploy directory
+            URI uri = URI.create(new File(extensionUrl.getFile()).getName());
+            ContributionSource source = new FileContributionSource(uri, extensionUrl, -1, true);
+            sources.add(source);
+        }
+        return sources;
     }
 
 }
