@@ -6,7 +6,7 @@ dependencies {
     compile group: 'org.codehaus.fabric3', name: 'fabric3-fabric', version: fabric3Version
     compile group: 'org.codehaus.fabric3', name: 'fabric3-policy', version: fabric3Version
 
-    compile project(":integration-test:runtime-api")
+    compile project(":integration-test:test-api")
 
 }
 

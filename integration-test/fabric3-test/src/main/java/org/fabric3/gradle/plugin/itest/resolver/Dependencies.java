@@ -109,7 +109,7 @@ public class Dependencies {
      * @return the main maven host module
      */
     public static Artifact getMainRuntimeModule(String runtimeVersion) {
-        return new DefaultArtifact("org.codehaus.fabric3.gradle", "runtime-host", "jar", runtimeVersion);
+        return new DefaultArtifact("org.codehaus.fabric3.gradle", "test-host", "jar", runtimeVersion);
     }
 
     /**
