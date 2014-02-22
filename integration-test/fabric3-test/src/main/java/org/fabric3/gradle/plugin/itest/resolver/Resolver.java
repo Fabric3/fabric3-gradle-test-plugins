@@ -43,6 +43,7 @@ import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -117,6 +118,30 @@ public class Resolver {
         return createContributionSources(extensionUrls);
     }
 
+    /**
+     * Calculates dependencies based on the set of project artifacts.
+     *
+     * @param artifacts the set of host artifacts
+     * @return the set of URLs pointing to module dependencies.
+     */
+    public Set<URL> resolveDependencies(Set<Artifact> artifacts) throws DependencyResolutionException {
+        Set<URL> urls = new LinkedHashSet<>();
+        for (Artifact dependency : artifacts) {
+            try {
+                Set<Artifact> resolved = resolveArtifacts(dependency);
+                for (Artifact artifact : resolved) {
+                    File pathElement = artifact.getFile();
+                    URL url = pathElement.toURI().toURL();
+                    urls.add(url);
+                }
+            } catch (MalformedURLException e) {
+                throw new DependencyResolutionException(null, e);
+            }
+
+        }
+        return urls;
+    }
+
     private Set<Artifact> resolveArtifacts(Artifact artifact) throws DependencyResolutionException {
         CollectRequest collectRequest = new CollectRequest();
 
@@ -174,6 +199,7 @@ public class Resolver {
         }
         return sources;
     }
+
 
 }
 

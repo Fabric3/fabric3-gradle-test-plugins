@@ -68,6 +68,7 @@ import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.FileHelper;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
 import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
+import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
 import org.fabric3.gradle.plugin.itest.resolver.Resolver;
 import org.fabric3.gradle.plugin.itest.runtime.PluginBootConfiguration;
 import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
@@ -198,19 +199,20 @@ public class Fabric3TestTask extends DefaultTask {
      * @return the boot configuration
      */
     private PluginBootConfiguration createBootConfiguration(Resolver resolver) {
-        Set<Artifact> shared = Collections.emptySet(); // TODO FIXME
-        Set<Artifact> extensions = Collections.emptySet(); // TODO FIXME
-        Set<Artifact> profiles = Collections.emptySet(); // TODO FIXME
+        Set<Artifact> shared = Collections.emptySet(); // TODO FIXME add as a property
+        Set<Artifact> extensions = Collections.emptySet(); // TODO FIXME add as a property
+        Set<Artifact> profiles = Collections.emptySet(); // TODO FIXME add as a property
         try {
             Set<Artifact> hostArtifacts = resolver.resolveHostArtifacts(shared);
             Set<Artifact> runtimeArtifacts = resolver.resolveRuntimeArtifacts();
 
             List<ContributionSource> runtimeExtensions = resolver.resolveRuntimeExtensions(extensions, profiles);
-            Set<URL> moduleDependencies = Collections.emptySet();
-            // FIXME       Set<URL> moduleDependencies = resolver.resolveModuleDependencies(hostArtifacts);
+
+            Set<Artifact> projectDependencies = ProjectDependencies.calculateProjectDependencies(getProject(), hostArtifacts);
+            Set<URL> moduleDependencies = resolver.resolveDependencies(projectDependencies);
 
             ClassLoader parentClassLoader = createParentClassLoader();
-            //
+
             ClassLoader hostClassLoader = ClassLoaderHelper.createHostClassLoader(parentClassLoader, hostArtifacts);
             ClassLoader bootClassLoader = ClassLoaderHelper.createBootClassLoader(hostClassLoader, runtimeArtifacts);
 
