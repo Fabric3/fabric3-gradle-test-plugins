@@ -46,19 +46,20 @@ import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
 
 /**
  * Notes on deprecation: Maven Dependencies class includes the following where this one doesn't:
- *
+ * <p/>
  * - maven-extension as a core extension
- *
+ * <p/>
  * This class includes the following where the Maven version doesn't:
- *
- *  - fabric3-test-spi
- *
+ * <p/>
+ * - fabric3-test-spi - test-extension
+ * <p/>
  * Will need to provide an extension mechanism to add specific extensions.
  */
 @Deprecated
 public class Dependencies {
 
     public static final String F3_GORUP_ID = "org.codehaus.fabric3";
+    public static final String FABRIC3_GRADLE = "org.codehaus.fabric3.gradle";
 
     /**
      * Returns the core runtime extensions as a set of dependencies
@@ -93,6 +94,9 @@ public class Dependencies {
         artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-execution", "jar", runtimeVersion);
         extensions.add(artifact);
 
+        artifact = new DefaultArtifact(FABRIC3_GRADLE, "test-extension", "jar", runtimeVersion);
+        extensions.add(artifact);
+
         artifact = new DefaultArtifact(F3_GORUP_ID, "fabric3-junit", "jar", runtimeVersion);
         extensions.add(artifact);
 
@@ -109,7 +113,7 @@ public class Dependencies {
      * @return the main maven host module
      */
     public static Artifact getMainRuntimeModule(String runtimeVersion) {
-        return new DefaultArtifact("org.codehaus.fabric3.gradle", "test-host", "jar", runtimeVersion);
+        return new DefaultArtifact(FABRIC3_GRADLE, "test-host", "jar", runtimeVersion);
     }
 
     /**

@@ -1,0 +1,14 @@
+dependencies {
+    compile group: 'org.codehaus.fabric3.spec', name: 'sca-api', version: '1.1.4'
+    compile group: 'org.codehaus.fabric3', name: 'fabric3-api', version: fabric3Version
+    compile group: 'org.codehaus.fabric3', name: 'fabric3-host-api', version: fabric3Version
+    compile group: 'org.codehaus.fabric3', name: 'fabric3-model-api', version: fabric3Version
+    compile group: 'org.codehaus.fabric3', name: 'fabric3-spi', version: fabric3Version
+    compile group: 'org.codehaus.fabric3', name: 'fabric3-test-spi', version: fabric3Version
+
+    compile project(":integration-test:test-api")
+
+}
+
+
+
