@@ -44,7 +44,6 @@ import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
@@ -70,6 +69,7 @@ import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 import org.fabric3.gradle.plugin.itest.aether.AetherBootstrap;
+import org.fabric3.gradle.plugin.itest.config.TestPluginConvention;
 import org.fabric3.gradle.plugin.itest.deployer.Deployer;
 import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
 import org.fabric3.gradle.plugin.itest.resolver.Resolver;
@@ -78,6 +78,7 @@ import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
 import org.fabric3.gradle.plugin.itest.runtime.PluginRuntimeBooter;
 import org.fabric3.gradle.plugin.itest.util.ClassLoaderHelper;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.service.ServiceRegistry;
@@ -87,21 +88,18 @@ import org.gradle.internal.service.ServiceRegistry;
  */
 public class Fabric3TestTask extends DefaultTask {
 
-    // FIXME configure properties
     private String[] hiddenPackages = HiddenPackages.getPackages();
-    private String systemConfig;
-    private String runtimeVersion = "2.5.0-SNAPSHOT";
-    private String compositeNamespace = "urn:fabric3.org";
-    private String compositeName = "TestComposite";
-    private String errorText;
-
 
     @TaskAction
     public void fabric3Test() throws InitializationException, Fabric3PluginException {
         Logger logger = getLogger();
         logger.lifecycle("Starting Fabric3");
 
-        PluginBootConfiguration configuration = createBootConfiguration();
+        Project project = getProject();
+
+        TestPluginConvention convention = (TestPluginConvention) project.getConvention().getByName(TestPluginConvention.FABRIC3_TEST_CONVENTION);
+
+        PluginBootConfiguration configuration = createBootConfiguration(convention);
 
         Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
 
@@ -112,8 +110,11 @@ public class Fabric3TestTask extends DefaultTask {
             // load the contributions
             // TODO enable:
             //  deployContributions(runtime);
-            File buildDirectory = getProject().getBuildDir();
-            Deployer deployer = new Deployer(compositeNamespace, compositeName, buildDirectory, logger);
+            File buildDirectory = project.getBuildDir();
+            String namespace = convention.getCompositeNamespace();
+            String name = convention.getCompositeName();
+            Deployer deployer = new Deployer(namespace, name, buildDirectory, logger);
+            String errorText = convention.getErrorText();
             boolean continueDeployment = deployer.deploy(runtime, errorText);
             if (!continueDeployment) {
                 return;
@@ -199,28 +200,30 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @return the boot configuration
      */
-    private PluginBootConfiguration createBootConfiguration() {
+    private PluginBootConfiguration createBootConfiguration(TestPluginConvention convention) {
 
         RepositorySystem system = AetherBootstrap.getRepositorySystem();
 
-        boolean offline = getProject().getGradle().getStartParameter().isOffline();
+        Project project = getProject();
+        boolean offline = project.getGradle().getStartParameter().isOffline();
+
         ServiceRegistry registry = getServices();
         RepositorySystemSession session = AetherBootstrap.getRepositorySystemSession(system, registry, offline);
 
         List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
 
-        Resolver resolver = new Resolver(system, session, repositories, runtimeVersion);
+        Resolver resolver = new Resolver(system, session, repositories, convention.getRuntimeVersion());
 
-        Set<Artifact> shared = Collections.emptySet(); // TODO FIXME add as a property
-        Set<Artifact> extensions = Collections.emptySet(); // TODO FIXME add as a property
-        Set<Artifact> profiles = Collections.emptySet(); // TODO FIXME add as a property
+        Set<Artifact> shared = convention.getShared();
+        Set<Artifact> extensions = convention.getExtensions();
+        Set<Artifact> profiles = convention.getProfiles();
         try {
             Set<Artifact> hostArtifacts = resolver.resolveHostArtifacts(shared);
             Set<Artifact> runtimeArtifacts = resolver.resolveRuntimeArtifacts();
 
             List<ContributionSource> runtimeExtensions = resolver.resolveRuntimeExtensions(extensions, profiles);
 
-            Set<Artifact> projectDependencies = ProjectDependencies.calculateProjectDependencies(getProject(), hostArtifacts);
+            Set<Artifact> projectDependencies = ProjectDependencies.calculateProjectDependencies(project, hostArtifacts);
             Set<URL> moduleDependencies = resolver.resolveDependencies(projectDependencies);
 
             ClassLoader parentClassLoader = createParentClassLoader();
@@ -235,9 +238,9 @@ public class Fabric3TestTask extends DefaultTask {
             configuration.setExtensions(runtimeExtensions);
             configuration.setModuleDependencies(moduleDependencies);
 
-            File buildDir = getProject().getBuildDir();
+            File buildDir = project.getBuildDir();
             configuration.setOutputDirectory(buildDir);
-            configuration.setSystemConfig(systemConfig);
+            configuration.setSystemConfig(configuration.getSystemConfig());
             configuration.setRepositorySession(session);
             configuration.setRepositorySystem(system);
             return configuration;

@@ -37,6 +37,7 @@
 */
 package org.fabric3.gradle.plugin.itest.impl;
 
+import org.fabric3.gradle.plugin.itest.config.TestPluginConvention;
 import org.gradle.api.Plugin;
 import org.gradle.api.Project;
 
@@ -47,5 +48,6 @@ public class Fabric3TestPlugin implements Plugin<Project> {
 
     public void apply(Project project) {
         project.getTasks().create("fabric3Test", Fabric3TestTask.class);
+        project.getConvention().add(TestPluginConvention.FABRIC3_TEST_CONVENTION, TestPluginConvention.class);
     }
 }
