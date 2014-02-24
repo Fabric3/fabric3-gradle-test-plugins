@@ -58,6 +58,7 @@ import org.fabric3.api.host.classloader.MaskingClassLoader;
 import org.fabric3.api.host.contribution.ContributionNotFoundException;
 import org.fabric3.api.host.contribution.ContributionService;
 import org.fabric3.api.host.contribution.ContributionSource;
+import org.fabric3.api.host.contribution.FileContributionSource;
 import org.fabric3.api.host.contribution.InstallException;
 import org.fabric3.api.host.contribution.StoreException;
 import org.fabric3.api.host.domain.DeploymentException;
@@ -98,18 +99,26 @@ public class Fabric3TestTask extends DefaultTask {
         Project project = getProject();
 
         TestPluginConvention convention = (TestPluginConvention) project.getConvention().getByName(TestPluginConvention.FABRIC3_TEST_CONVENTION);
+        boolean offline = project.getGradle().getStartParameter().isOffline();
 
-        PluginBootConfiguration configuration = createBootConfiguration(convention);
+        RepositorySystem system = AetherBootstrap.getRepositorySystem();
+        ServiceRegistry registry = getServices();
+        RepositorySystemSession session = AetherBootstrap.getRepositorySystemSession(system, registry, offline);
 
-        Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
+        List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
+
+        Resolver resolver = new Resolver(system, session, repositories, convention.getRuntimeVersion());
+
+        PluginBootConfiguration configuration = createBootConfiguration(convention, resolver, system, session);
 
         PluginRuntimeBooter booter = new PluginRuntimeBooter(configuration);
 
         PluginRuntime<PluginHostInfo> runtime = booter.boot();
+        ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
         try {
+            Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
             // load the contributions
-            // TODO enable:
-            //  deployContributions(runtime);
+            deployContributions(runtime, convention, resolver);
             File buildDirectory = project.getBuildDir();
             String namespace = convention.getCompositeNamespace();
             String name = convention.getCompositeName();
@@ -125,6 +134,7 @@ public class Fabric3TestTask extends DefaultTask {
             try {
                 tryLatch(runtime);
                 booter.shutdown();
+                Thread.currentThread().setContextClassLoader(oldClassLoader);
             } catch (Exception e) {
                 // ignore
             }
@@ -160,25 +170,25 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @param runtime the runtime
      */
-    private void deployContributions(PluginRuntime<PluginHostInfo> runtime) throws Fabric3PluginException {
-        //        if (contributions.length <= 0) {
-        //            return;
-        //        }
+    private void deployContributions(PluginRuntime<PluginHostInfo> runtime, TestPluginConvention convention, Resolver resolver) throws Fabric3PluginException {
+        Set<Artifact> contributions = convention.getContributions();
+        if (contributions.isEmpty()) {
+            return;
+        }
         try {
             ContributionService contributionService = runtime.getComponent(ContributionService.class, Names.CONTRIBUTION_SERVICE_URI);
             Domain domain = runtime.getComponent(Domain.class, Names.APPLICATION_DOMAIN_URI);
             List<ContributionSource> sources = new ArrayList<>();
-            //            for (Dependency contribution : contributions) {
-            //                Artifact artifact = artifactHelper.resolve(contribution);
-            //                URL url = artifact.getFile().toURI().toURL();
-            //                URI uri = URI.create(new File(url.getFile()).getName());
-            //                ContributionSource source = new FileContributionSource(uri, url, -1, true);
-            //                sources.add(source);
-            //            }
+            Set<URL> resolved = resolver.resolve(contributions);
+            for (URL url : resolved) {
+                URI uri = URI.create(new File(url.getFile()).getName());
+                ContributionSource source = new FileContributionSource(uri, url, -1, true);
+                sources.add(source);
+            }
             List<URI> uris = contributionService.store(sources);
             contributionService.install(uris);
             domain.include(uris);
-        } catch (ContributionNotFoundException | InstallException | DeploymentException | StoreException e) {
+        } catch (ContributionNotFoundException | InstallException | DeploymentException | StoreException | ArtifactResolutionException e) {
             throw new Fabric3PluginException("Error installing contributions", e);
         }
     }
@@ -200,19 +210,12 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @return the boot configuration
      */
-    private PluginBootConfiguration createBootConfiguration(TestPluginConvention convention) {
-
-        RepositorySystem system = AetherBootstrap.getRepositorySystem();
+    private PluginBootConfiguration createBootConfiguration(TestPluginConvention convention,
+                                                            Resolver resolver,
+                                                            RepositorySystem system,
+                                                            RepositorySystemSession session) {
 
         Project project = getProject();
-        boolean offline = project.getGradle().getStartParameter().isOffline();
-
-        ServiceRegistry registry = getServices();
-        RepositorySystemSession session = AetherBootstrap.getRepositorySystemSession(system, registry, offline);
-
-        List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
-
-        Resolver resolver = new Resolver(system, session, repositories, convention.getRuntimeVersion());
 
         Set<Artifact> shared = convention.getShared();
         Set<Artifact> extensions = convention.getExtensions();

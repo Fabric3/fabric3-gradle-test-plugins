@@ -142,6 +142,21 @@ public class Resolver {
         return urls;
     }
 
+    public Set<URL> resolve(Set<Artifact> artifacts) throws ArtifactResolutionException {
+        Set<URL> urls = new HashSet<>();
+        if (artifacts != null) {
+            for (Artifact artifact : artifacts) {
+                Artifact resolvedArtifact = resolveArtifact(artifact);
+                try {
+                    urls.add(resolvedArtifact.getFile().toURI().toURL());
+                } catch (MalformedURLException e) {
+                    throw new AssertionError();
+                }
+            }
+        }
+        return urls;
+    }
+
     private Set<Artifact> resolveArtifacts(Artifact artifact) throws DependencyResolutionException {
         CollectRequest collectRequest = new CollectRequest();
 
@@ -159,21 +174,6 @@ public class Resolver {
         }
         return results;
 
-    }
-
-    private Set<URL> resolve(Set<Artifact> artifacts) throws ArtifactResolutionException {
-        Set<URL> urls = new HashSet<>();
-        if (artifacts != null) {
-            for (Artifact artifact : artifacts) {
-                Artifact resolvedArtifact = resolveArtifact(artifact);
-                try {
-                    urls.add(resolvedArtifact.getFile().toURI().toURL());
-                } catch (MalformedURLException e) {
-                    throw new AssertionError();
-                }
-            }
-        }
-        return urls;
     }
 
     /**

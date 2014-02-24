@@ -62,6 +62,8 @@ public class TestPluginConvention {
     private Set<Artifact> exclusions = new HashSet<>();
     private Set<Artifact> shared = new HashSet<>();
 
+    private Set<Artifact> contributions = new HashSet<>();
+
     public String getRuntimeVersion() {
         return runtimeVersion;
     }
@@ -124,6 +126,18 @@ public class TestPluginConvention {
 
     public void shared(String artifact) {
         shared.add(new DefaultArtifact(artifact));
+    }
+
+    public void contribution(Map<String, String> contribution) {
+        contributions.add(convert(contribution));
+    }
+
+    public void contribution(String contribution) {
+        contributions.add(new DefaultArtifact(contribution));
+    }
+
+    public Set<Artifact> getContributions() {
+        return contributions;
     }
 
     public Set<Artifact> getExtensions() {
