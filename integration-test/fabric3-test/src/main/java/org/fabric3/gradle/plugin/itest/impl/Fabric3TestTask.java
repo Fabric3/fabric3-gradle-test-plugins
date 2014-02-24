@@ -131,7 +131,7 @@ public class Fabric3TestTask extends DefaultTask {
 
         PluginRuntimeBooter booter = new PluginRuntimeBooter(configuration);
 
-        PluginRuntime<PluginHostInfo> runtime = booter.boot();
+        PluginRuntime<PluginHostInfo> runtime = booter.boot(project);
 
         progressLogger.progress("BOOTED");
 

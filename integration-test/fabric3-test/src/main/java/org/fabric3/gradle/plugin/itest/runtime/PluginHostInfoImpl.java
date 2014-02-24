@@ -48,6 +48,7 @@ import org.fabric3.api.host.Names;
 import org.fabric3.api.host.os.OperatingSystem;
 import org.fabric3.api.model.type.RuntimeMode;
 import org.fabric3.gradle.plugin.api.PluginHostInfo;
+import org.gradle.api.Project;
 
 /**
  *
@@ -57,18 +58,20 @@ public class PluginHostInfoImpl implements PluginHostInfo {
     private String environment;
     private Set<URL> dependencyUrls;
     private File tempDir;
+    private Project project;
     private File baseDir;
     private OperatingSystem operatingSystem;
     private File nativeDirectory;
 
-    public PluginHostInfoImpl(URI domain, String environment, Set<URL> dependencyUrls, File baseDir, File tempDir, OperatingSystem operatingSystem) {
+    public PluginHostInfoImpl(URI domain, String environment, Set<URL> dependencyUrls, File baseDir, File tempDir, OperatingSystem os, Project project) {
         this.domain = domain;
         this.environment = environment;
         this.dependencyUrls = dependencyUrls;
         this.baseDir = baseDir;
         this.tempDir = tempDir;
+        this.project = project;
         this.nativeDirectory = new File(tempDir, "native");
-        this.operatingSystem = operatingSystem;
+        this.operatingSystem = os;
     }
 
     public String getRuntimeName() {
@@ -134,6 +137,10 @@ public class PluginHostInfoImpl implements PluginHostInfo {
 
     public Set<URL> getDependencyUrls() {
         return dependencyUrls;
+    }
+
+    public Project getProject() {
+        return project;
     }
 
     public boolean isJavaEEXAEnabled() {

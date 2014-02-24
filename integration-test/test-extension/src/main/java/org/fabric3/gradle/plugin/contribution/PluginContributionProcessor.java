@@ -50,6 +50,7 @@ import org.fabric3.api.host.contribution.InstallException;
 import org.fabric3.api.host.stream.Source;
 import org.fabric3.api.host.stream.UrlSource;
 import org.fabric3.api.host.util.FileHelper;
+import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.spi.contribution.ContentTypeResolutionException;
 import org.fabric3.spi.contribution.ContentTypeResolver;
 import org.fabric3.spi.contribution.Contribution;
@@ -73,17 +74,22 @@ import org.oasisopen.sca.annotation.Reference;
  */
 // FIXME merge with Maven deploy functionality into common superclass
 @EagerInit
-public class PluginContributionProcessor  implements ContributionProcessor {
+public class PluginContributionProcessor implements ContributionProcessor {
     private static final String CONTENT_TYPE = "application/vnd.fabric3.plugin-project";
     private ProcessorRegistry registry;
     private ContentTypeResolver contentTypeResolver;
     private List<JavaArtifactIntrospector> artifactIntrospectors = Collections.emptyList();
     private Loader loader;
+    private PluginHostInfo info;
 
-    public PluginContributionProcessor(@Reference ProcessorRegistry registry, @Reference ContentTypeResolver contentTypeResolver, @Reference Loader loader) {
+    public PluginContributionProcessor(@Reference ProcessorRegistry registry,
+                                       @Reference ContentTypeResolver contentTypeResolver,
+                                       @Reference Loader loader,
+                                       @Reference PluginHostInfo info) {
         this.registry = registry;
         this.contentTypeResolver = contentTypeResolver;
         this.loader = loader;
+        this.info = info;
     }
 
     @Reference
@@ -202,9 +208,11 @@ public class PluginContributionProcessor  implements ContributionProcessor {
                 iterateArtifactsRecursive(contribution, context, callback, file);
             } else {
                 try {
-                    String name = file.getName();
-                    if (name.endsWith(".class")) {
-                        name = calculateClassName(file);
+                    if (file.getName().endsWith(".class")) {
+                        String name = calculateClassName(file);
+                        if (name == null) {
+                            continue; // ignore: not a contribution class or test class
+                        }
                         URL entryUrl = file.toURI().toURL();
 
                         Resource resource = null;
@@ -221,7 +229,7 @@ public class PluginContributionProcessor  implements ContributionProcessor {
                         contribution.addResource(resource);
                         callback.onResource(resource);
                     } else {
-                        String contentType = contentTypeResolver.getContentType(name);
+                        String contentType = contentTypeResolver.getContentType(file.getName());
                         // skip entry if we don't recognize the content type
                         if (contentType == null) {
                             continue;
@@ -241,13 +249,15 @@ public class PluginContributionProcessor  implements ContributionProcessor {
     }
 
     private String calculateClassName(File file) {
-        String name;
-        int index = file.getPath().indexOf("target" + File.separator + "classes" + File.separator);
-        if (index > 0) {
-            name = file.getPath().substring(index + 15);
-        } else {
-            index = file.getPath().indexOf("target" + File.separator + "test-classes" + File.separator);
-            name = file.getPath().substring(index + 20);
+        String name = null;
+        File buildDir = info.getProject().getBuildDir();
+        File classes = new File(buildDir, "classes");
+        File mainDir = new File(classes, "main");
+        File testDir = new File(classes, "test");
+        if (file.getPath().startsWith(mainDir.getPath())) {
+            name = file.getPath().substring(mainDir.getPath().length() + 1);
+        } else if (file.getPath().startsWith(testDir.getPath())) {
+            name = file.getPath().substring(testDir.getPath().length() + 1);
         }
         return name;
     }

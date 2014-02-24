@@ -37,14 +37,30 @@
 */
 package org.fabric3.gradle.plugin.test;
 
+import java.util.Map;
+
 import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
 import org.fabric3.gradle.plugin.api.TestSuiteFactory;
+import org.fabric3.spi.container.wire.Wire;
+import org.fabric3.test.spi.TestWireHolder;
+import org.oasisopen.sca.annotation.Reference;
 
 /**
  *
  */
 public class TestSuiteFactoryImpl implements TestSuiteFactory {
+    private TestWireHolder wireHolder;
+
+    public TestSuiteFactoryImpl(@Reference TestWireHolder wireHolder) {
+        this.wireHolder = wireHolder;
+    }
+
     public IntegrationTestSuite createTestSuite() {
-        return new IntegrationTestSuiteImpl();
+        IntegrationTestSuiteImpl suite = new IntegrationTestSuiteImpl();
+        for (Map.Entry<String, Wire> entry : wireHolder.getWires().entrySet()) {
+            TestSet testSet = new TestSet(entry.getKey(), entry.getValue());
+            suite.add(testSet);
+        }
+        return suite;
     }
 }

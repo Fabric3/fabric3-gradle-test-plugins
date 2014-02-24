@@ -71,6 +71,7 @@ import org.fabric3.api.host.util.FileHelper;
 import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
 import org.fabric3.gradle.plugin.api.PluginRuntimeConfiguration;
+import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.w3c.dom.Document;
 
@@ -104,11 +105,11 @@ public class PluginRuntimeBooter {
         logger = configuration.getLogger();
     }
 
-    public PluginRuntime<PluginHostInfo> boot() throws InitializationException {
+    public PluginRuntime<PluginHostInfo> boot(Project project) throws InitializationException {
         BootstrapService bootstrapService = BootstrapFactory.getService(bootClassLoader);
         Document systemConfig = getSystemConfig(bootstrapService);
 
-        PluginRuntime<PluginHostInfo> runtime = createRuntime(bootstrapService, systemConfig);
+        PluginRuntime<PluginHostInfo> runtime = createRuntime(bootstrapService, systemConfig, project);
 
         Map<String, String> exportedPackages = new HashMap<>();
         exportedPackages.put("org.fabric3.test.spi", Names.VERSION);
@@ -133,7 +134,8 @@ public class PluginRuntimeBooter {
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    private PluginRuntime<PluginHostInfo> createRuntime(BootstrapService bootstrapService, Document systemConfig) throws InitializationException {
+    private PluginRuntime<PluginHostInfo> createRuntime(BootstrapService bootstrapService, Document systemConfig, Project project)
+            throws InitializationException {
         String environment = bootstrapService.parseEnvironment(systemConfig);
 
         File tempDir = new File(System.getProperty("java.io.tmpdir"), ".f3");
@@ -151,7 +153,7 @@ public class PluginRuntimeBooter {
         File baseDir = new File(outputDirectory, "test-classes");
         OperatingSystem os = BootstrapHelper.getOperatingSystem();
 
-        PluginHostInfo hostInfo = new PluginHostInfoImpl(domain, environment, moduleDependencies, baseDir, tempDir, os);
+        PluginHostInfo hostInfo = new PluginHostInfoImpl(domain, environment, moduleDependencies, baseDir, tempDir, os, project);
 
         MBeanServer mBeanServer = MBeanServerFactory.createMBeanServer(PluginConstants.DOMAIN);
 

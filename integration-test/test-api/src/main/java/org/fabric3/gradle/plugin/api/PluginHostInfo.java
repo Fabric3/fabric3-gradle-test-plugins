@@ -41,6 +41,7 @@ import java.net.URL;
 import java.util.Set;
 
 import org.fabric3.api.host.runtime.HostInfo;
+import org.gradle.api.Project;
 
 /**
  *
@@ -49,5 +50,7 @@ import org.fabric3.api.host.runtime.HostInfo;
 public interface PluginHostInfo extends HostInfo {
 
     Set<URL> getDependencyUrls();
+
+    Project getProject();
 
 }

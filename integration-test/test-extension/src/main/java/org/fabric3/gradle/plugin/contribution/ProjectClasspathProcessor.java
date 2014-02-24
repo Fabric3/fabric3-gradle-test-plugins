@@ -87,16 +87,20 @@ public class ProjectClasspathProcessor implements ClasspathProcessor {
     }
 
     public List<URL> process(URL url, List<Library> libraries) throws IOException {
-        String file = url.getFile();
         final List<URL> urls = new ArrayList<>(2);
-        File classesDir = new File(file, "main");
-        urls.add(classesDir.toURI().toURL());
-        File testClassesDir = new File(file, "test");
-        urls.add(testClassesDir.toURI().toURL());
+
+        File buildDir = hostInfo.getProject().getBuildDir();
+        File classes = new File(buildDir, "classes");
+        File mainDir = new File(classes, "main");
+        File testDir = new File(classes, "test");
+
+        urls.add(mainDir.toURI().toURL());
+        urls.add(testDir.toURI().toURL());
+
         urls.addAll(hostInfo.getDependencyUrls());
 
         //add jars in META-INF/lib to classpath
-        File metaInf = new File(classesDir, "META-INF");
+        File metaInf = new File(mainDir, "META-INF");
         File metaInfLib = new File(metaInf, "lib");
 
         if (metaInfLib.exists()) {

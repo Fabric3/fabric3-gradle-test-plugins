@@ -37,13 +37,51 @@
 */
 package org.fabric3.gradle.plugin.test;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
 
 /**
  *
  */
 public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
-    public void execute() {
+    private final Map<String, TestSet> testSets = new HashMap<>();
+    private int testSetCount = 0;
+    private int testCount = 0;
 
+    public void add(TestSet testSet) {
+        testSets.put(testSet.getName(), testSet);
+        testSetCount += 1;
+        testCount += testSet.getTestCount();
     }
+
+    public void execute() {
+        for (TestSet testSet : testSets.values()) {
+            execute(testSet);
+        }
+    }
+
+    public void execute(String testSetName) {
+//        ReporterManager reporterManager = reporterManagerFactory.createReporterManager();
+        for (TestSet testSet : testSets.values()) {
+            execute(testSet);
+        }
+    }
+
+    public int getNumTests() {
+        return testCount;
+    }
+
+    public int getNumTestSets() {
+        return testSetCount;
+    }
+
+    protected void execute(TestSet testSet) {
+        //        reporterManager.testSetStarting(new ReportEntry(this, testSet.getName(), "Starting"));
+        testSet.execute();
+        //        reporterManager.testSetCompleted(new ReportEntry(this, testSet.getName(), "Completed"));
+        //        reporterManager.reset();
+    }
+
 }
