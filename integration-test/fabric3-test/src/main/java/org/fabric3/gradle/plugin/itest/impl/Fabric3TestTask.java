@@ -297,8 +297,7 @@ public class Fabric3TestTask extends DefaultTask {
             configuration.setRepositorySystem(system);
             return configuration;
         } catch (DependencyResolutionException | ArtifactResolutionException e) {
-            // FIXME  throw another exception
-            throw new AssertionError(e);
+            throw new GradleException(e.getMessage(), e);
         }
     }
 
