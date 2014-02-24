@@ -69,6 +69,7 @@ import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.FileHelper;
 import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
+import org.fabric3.gradle.plugin.api.TestSuiteFactory;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 import org.fabric3.gradle.plugin.itest.aether.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.config.TestPluginConvention;
@@ -151,9 +152,10 @@ public class Fabric3TestTask extends DefaultTask {
                 return;
             }
             progressLogger.progress("Running Fabric3 tests");
-            //            TestRunner runner = new TestRunner(reportsDirectory, trimStackTrace, getLog());
-            //            runner.executeTests(runtime);
+            TestSuiteFactory testSuiteFactory = runtime.getComponent(TestSuiteFactory.class);
+            testSuiteFactory.createTestSuite().execute();
             tryLatch(runtime);
+            completion = Completion.OK;
         } finally {
             try {
                 booter.shutdown();

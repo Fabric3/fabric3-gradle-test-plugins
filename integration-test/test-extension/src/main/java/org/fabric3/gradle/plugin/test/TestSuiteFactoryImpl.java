@@ -35,34 +35,16 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package f3;
+package org.fabric3.gradle.plugin.test;
 
-import javax.xml.namespace.QName;
-
-import org.fabric3.api.Namespaces;
-import org.fabric3.api.annotation.model.Provides;
-import org.fabric3.api.model.type.builder.CompositeBuilder;
-import org.fabric3.api.model.type.component.Composite;
+import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
 import org.fabric3.gradle.plugin.api.TestSuiteFactory;
-import org.fabric3.gradle.plugin.contribution.PluginContributionProcessor;
-import org.fabric3.gradle.plugin.contribution.ProjectClasspathProcessor;
-import org.fabric3.gradle.plugin.test.TestSuiteFactoryImpl;
-import org.fabric3.gradle.plugin.test.WireHolderImpl;
-import org.fabric3.spi.model.type.system.SystemComponentDefinitionBuilder;
 
 /**
  *
  */
-public class FabricProvider {
-    private static final QName QNAME = new QName(Namespaces.F3, "GradleExtensionComposite");
-
-    @Provides
-    public static Composite getComposite() {
-        CompositeBuilder compositeBuilder = CompositeBuilder.newBuilder(QNAME);
-        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(WireHolderImpl.class).build());
-        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(ProjectClasspathProcessor.class).build());
-        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(PluginContributionProcessor.class).build());
-        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(TestSuiteFactory.class.getSimpleName(), TestSuiteFactoryImpl.class).build());
-        return compositeBuilder.build();
+public class TestSuiteFactoryImpl implements TestSuiteFactory {
+    public IntegrationTestSuite createTestSuite() {
+        return new IntegrationTestSuiteImpl();
     }
 }

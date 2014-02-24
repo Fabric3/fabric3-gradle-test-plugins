@@ -80,7 +80,6 @@ public class Resolver {
     }
 
     public Set<Artifact> resolveHostArtifacts(Set<Artifact> shared) throws DependencyResolutionException {
-        long start = System.currentTimeMillis();
         Set<Artifact> hostArtifacts = new HashSet<>();
         Set<Artifact> hostDependencies = Dependencies.getHostDependencies(runtimeVersion);
         for (Artifact artifact : hostDependencies) {
@@ -93,19 +92,14 @@ public class Resolver {
                 hostArtifacts.addAll(resolveArtifacts(artifact));
             }
         }
-        System.out.println("Resolve host:::::" + (System.currentTimeMillis() - start));
         return hostArtifacts;
     }
 
     public Set<Artifact> resolveRuntimeArtifacts() throws DependencyResolutionException {
-        long start = System.currentTimeMillis();
-        Set<Artifact> artifacts = resolveArtifacts(Dependencies.getMainRuntimeModule(runtimeVersion));
-        System.out.println("Resolve runtime:::::" + (System.currentTimeMillis() - start));
-        return artifacts;
+        return resolveArtifacts(Dependencies.getMainRuntimeModule(runtimeVersion));
     }
 
     public List<ContributionSource> resolveRuntimeExtensions(Set<Artifact> extensions, Set<Artifact> profiles) throws ArtifactResolutionException {
-        long start = System.currentTimeMillis();
         Set<Artifact> expandedExtensions = new HashSet<>();
         expandedExtensions.addAll(Dependencies.getCoreExtensions(runtimeVersion));
         expandedExtensions.addAll(extensions);
@@ -114,7 +108,6 @@ public class Resolver {
         //        expandedExtensions.addAll(expandedProfiles);
 
         Set<URL> extensionUrls = resolve(expandedExtensions);
-        System.out.println("Resolve extensions:::::" + (System.currentTimeMillis() - start));
         return createContributionSources(extensionUrls);
     }
 
@@ -199,7 +192,6 @@ public class Resolver {
         }
         return sources;
     }
-
 
 }
 
