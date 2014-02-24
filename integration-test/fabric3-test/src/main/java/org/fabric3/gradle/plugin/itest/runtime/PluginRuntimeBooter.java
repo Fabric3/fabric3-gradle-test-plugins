@@ -178,7 +178,6 @@ public class PluginRuntimeBooter {
 
     public void shutdown() throws ShutdownException, InterruptedException, ExecutionException {
         coordinator.shutdown();
-        logger.lifecycle("Fabric3 stopped");
     }
 
     @SuppressWarnings("unchecked")

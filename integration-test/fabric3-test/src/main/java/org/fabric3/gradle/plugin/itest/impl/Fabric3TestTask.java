@@ -37,6 +37,7 @@
 */
 package org.fabric3.gradle.plugin.itest.impl;
 
+import javax.inject.Inject;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -83,18 +84,34 @@ import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.service.ServiceRegistry;
+import org.gradle.logging.ProgressLogger;
+import org.gradle.logging.ProgressLoggerFactory;
 
 /**
  * Boots an embedded Fabric3 runtime and runs integration tests for the current module and other configured modules.
  */
 public class Fabric3TestTask extends DefaultTask {
-
     private String[] hiddenPackages = HiddenPackages.getPackages();
+
+    private enum Completion {
+        OK, ABORTED, TEST_ERROR
+    }
+
+    private ProgressLoggerFactory progressLoggerFactory;
+
+    @Inject
+    public Fabric3TestTask(ProgressLoggerFactory progressLoggerFactory) {
+        this.progressLoggerFactory = progressLoggerFactory;
+    }
 
     @TaskAction
     public void fabric3Test() throws InitializationException, Fabric3PluginException {
+        ProgressLogger progressLogger = progressLoggerFactory.newOperation("fabric3");
+
+        progressLogger.setDescription("Fabric3 tests");
+        progressLogger.setLoggingHeader("Fabric3 tests");
+        progressLogger.started("BOOTING");
         Logger logger = getLogger();
-        logger.lifecycle("Starting Fabric3");
 
         Project project = getProject();
 
@@ -114,7 +131,13 @@ public class Fabric3TestTask extends DefaultTask {
         PluginRuntimeBooter booter = new PluginRuntimeBooter(configuration);
 
         PluginRuntime<PluginHostInfo> runtime = booter.boot();
+
+        progressLogger.progress("BOOTED");
+
         ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
+
+        Completion completion = Completion.ABORTED;
+
         try {
             Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
             // load the contributions
@@ -124,17 +147,27 @@ public class Fabric3TestTask extends DefaultTask {
             String name = convention.getCompositeName();
             Deployer deployer = new Deployer(namespace, name, buildDirectory, logger);
             String errorText = convention.getErrorText();
-            boolean continueDeployment = deployer.deploy(runtime, errorText);
-            if (!continueDeployment) {
+            if (!deployer.deploy(runtime, errorText)) {
                 return;
             }
+            progressLogger.progress("Running Fabric3 tests");
             //            TestRunner runner = new TestRunner(reportsDirectory, trimStackTrace, getLog());
             //            runner.executeTests(runtime);
+            tryLatch(runtime);
         } finally {
             try {
-                tryLatch(runtime);
                 booter.shutdown();
                 Thread.currentThread().setContextClassLoader(oldClassLoader);
+                switch (completion) {
+                    case OK:
+                        progressLogger.completed("COMPLETED");
+                        break;
+                    case ABORTED:
+                        progressLogger.completed("ABORTED");
+                        break;
+                    case TEST_ERROR:
+                        break;
+                }
             } catch (Exception e) {
                 // ignore
             }
@@ -155,11 +188,7 @@ public class Fabric3TestTask extends DefaultTask {
                 getLogger().lifecycle("Waiting on Fabric3 runtime latch");
                 method.invoke(latchComponent);
                 getLogger().lifecycle("Fabric3 runtime latch released");
-            } catch (NoSuchMethodException e) {
-                getLogger().error("Found latch service " + type + " but it does not declare an await() method");
-            } catch (SecurityException e) {
-                getLogger().error("Security exception introspecting latch service", e);
-            } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException e) {
+            } catch (IllegalAccessException | InvocationTargetException | IllegalArgumentException | NoSuchMethodException | SecurityException e) {
                 getLogger().error("Exception attempting to wait on latch service", e);
             }
         }
