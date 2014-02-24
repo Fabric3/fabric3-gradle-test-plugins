@@ -35,56 +35,54 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.test;
-
-import org.fabric3.gradle.plugin.api.TestRecorder;
-import org.fabric3.gradle.plugin.api.TestResult;
-import org.fabric3.spi.container.invocation.Message;
-import org.fabric3.spi.container.invocation.MessageCache;
-import org.fabric3.spi.container.invocation.WorkContext;
-import org.fabric3.spi.container.invocation.WorkContextCache;
-import org.fabric3.spi.container.wire.InvocationChain;
-import org.fabric3.spi.container.wire.Wire;
+package org.fabric3.gradle.plugin.api;
 
 /**
- * Executes a set of integration tests.
+ *
  */
-public class TestSet {
+public class TestResult {
+    public enum Type {
+        SUCCESS, FAILED
+    }
+
     private String testClassName;
-    private Wire wire;
-    private TestRecorder recorder;
+    private String testMethodName;
+    private Type type;
+    private Throwable throwable;
+    private long elapsedTime;
 
-    public TestSet(String testClassName, Wire wire, TestRecorder recorder) {
+    public TestResult(String testClassName, String testMethodName, Type type, long elapsedTime) {
         this.testClassName = testClassName;
-        this.wire = wire;
-        this.recorder = recorder;
+        this.testMethodName = testMethodName;
+        this.type = type;
+        this.elapsedTime = elapsedTime;
     }
 
-    public void execute() {
-        Message message = MessageCache.getAndResetMessage();
-        WorkContext workContext = WorkContextCache.getAndResetThreadWorkContext();
-        for (InvocationChain chain : wire.getInvocationChains()) {
-            message.setWorkContext(workContext);
-            long start = System.currentTimeMillis();
-            Message response = chain.getHeadInterceptor().invoke(message);
-            long elapsed = System.currentTimeMillis() - start;
-            TestResult result;
-            if (response.isFault()) {
-                result = new TestResult(testClassName, chain.getPhysicalOperation().getName(), (Throwable) response.getBody(), elapsed);
-            } else {
-                result = new TestResult(testClassName, chain.getPhysicalOperation().getName(), TestResult.Type.SUCCESS, elapsed);
-            }
-            recorder.result(result);
-            message.reset();
-            workContext.reset();
-        }
-    }
-
-    public int getTestCount() {
-        return wire.getInvocationChains().size();
+    public TestResult(String testClassName, String testMethodName, Throwable throwable, long elapsedTime) {
+        this.testClassName = testClassName;
+        this.testMethodName = testMethodName;
+        this.throwable = throwable;
+        this.type = Type.FAILED;
+        this.elapsedTime = elapsedTime;
     }
 
     public String getTestClassName() {
         return testClassName;
+    }
+
+    public String getTestMethodName() {
+        return testMethodName;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public Throwable getThrowable() {
+        return throwable;
+    }
+
+    public long getElapsedTime() {
+        return elapsedTime;
     }
 }

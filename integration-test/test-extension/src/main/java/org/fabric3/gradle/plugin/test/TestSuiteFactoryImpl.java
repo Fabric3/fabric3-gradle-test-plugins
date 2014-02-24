@@ -40,9 +40,11 @@ package org.fabric3.gradle.plugin.test;
 import java.util.Map;
 
 import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
+import org.fabric3.gradle.plugin.api.TestRecorder;
 import org.fabric3.gradle.plugin.api.TestSuiteFactory;
 import org.fabric3.spi.container.wire.Wire;
 import org.fabric3.test.spi.TestWireHolder;
+import org.gradle.logging.ProgressLogger;
 import org.oasisopen.sca.annotation.Reference;
 
 /**
@@ -55,10 +57,11 @@ public class TestSuiteFactoryImpl implements TestSuiteFactory {
         this.wireHolder = wireHolder;
     }
 
-    public IntegrationTestSuite createTestSuite() {
-        IntegrationTestSuiteImpl suite = new IntegrationTestSuiteImpl();
+    public IntegrationTestSuite createTestSuite(ProgressLogger progressLogger) {
+        TestRecorder recorder = new TestRecorder();
+        IntegrationTestSuiteImpl suite = new IntegrationTestSuiteImpl(recorder);
         for (Map.Entry<String, Wire> entry : wireHolder.getWires().entrySet()) {
-            TestSet testSet = new TestSet(entry.getKey(), entry.getValue());
+            TestSet testSet = new TestSet(entry.getKey(), entry.getValue(), recorder);
             suite.add(testSet);
         }
         return suite;

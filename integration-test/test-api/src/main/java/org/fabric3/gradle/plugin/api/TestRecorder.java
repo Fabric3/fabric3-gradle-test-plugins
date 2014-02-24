@@ -37,31 +37,35 @@
 */
 package org.fabric3.gradle.plugin.api;
 
-import javax.xml.namespace.QName;
-import java.net.URL;
-
-import org.fabric3.api.host.contribution.ContributionException;
-import org.fabric3.api.host.domain.DeploymentException;
-import org.fabric3.api.host.runtime.Fabric3Runtime;
-import org.fabric3.api.host.runtime.HostInfo;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  *
  */
-// FIXME merge with Maven deploy functionality into common superclass
-public interface PluginRuntime<T extends HostInfo> extends Fabric3Runtime {
+@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
+public class TestRecorder {
+    private List<TestResult> failed = new ArrayList<>();
+    private List<TestResult> successful = new ArrayList<>();
 
-    T getHostInfo();
+    public void result(TestResult result) {
+        if (TestResult.Type.FAILED == result.getType()) {
+           failed.add(result);
+        } else {
+            successful.add(result);
+        }
 
-    /**
-     * Deploys a composite by qualified name contained in the Maven module the runtime is currently executing for.
-     *
-     * @param base      the module output directory location
-     * @param composite the composite qualified name to activate
-     * @throws ContributionException if a contribution is thrown. The cause may a ValidationException resulting from  errors in the contribution. In this case
-     *                               the errors should be reported back to the user.
-     * @throws DeploymentException   if there is an error activating the test composite
-     */
-    void deploy(URL base, QName composite) throws ContributionException, DeploymentException;
+    }
 
+    public boolean hasFailures() {
+        return !failed.isEmpty();
+    }
+
+    public List<TestResult> getFailed() {
+        return failed;
+    }
+
+    public List<TestResult> getSuccessful() {
+        return successful;
+    }
 }

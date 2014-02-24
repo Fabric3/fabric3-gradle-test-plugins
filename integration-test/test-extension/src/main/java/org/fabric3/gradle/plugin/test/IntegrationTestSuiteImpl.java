@@ -41,17 +41,27 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
+import org.fabric3.gradle.plugin.api.TestRecorder;
 
 /**
  *
  */
 public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
-    private final Map<String, TestSet> testSets = new HashMap<>();
+    private TestRecorder recorder;
+    private Map<String, TestSet> testSets = new HashMap<>();
     private int testSetCount = 0;
     private int testCount = 0;
 
+    public IntegrationTestSuiteImpl(TestRecorder recorder) {
+        this.recorder = recorder;
+    }
+
+    public TestRecorder getRecorder() {
+        return recorder;
+    }
+
     public void add(TestSet testSet) {
-        testSets.put(testSet.getName(), testSet);
+        testSets.put(testSet.getTestClassName(), testSet);
         testSetCount += 1;
         testCount += testSet.getTestCount();
     }

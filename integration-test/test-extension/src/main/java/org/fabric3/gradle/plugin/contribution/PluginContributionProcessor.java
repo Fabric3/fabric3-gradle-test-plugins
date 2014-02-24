@@ -255,7 +255,7 @@ public class PluginContributionProcessor implements ContributionProcessor {
         File mainDir = new File(classes, "main");
         File testDir = new File(classes, "test");
         if (file.getPath().startsWith(mainDir.getPath())) {
-            name = file.getPath().substring(mainDir.getPath().length() + 1);
+//            name = file.getPath().substring(mainDir.getPath().length() + 1);
         } else if (file.getPath().startsWith(testDir.getPath())) {
             name = file.getPath().substring(testDir.getPath().length() + 1);
         }

@@ -42,6 +42,8 @@ package org.fabric3.gradle.plugin.api;
  */
 public interface IntegrationTestSuite {
 
+    TestRecorder getRecorder();
+
     void execute();
 
 }

@@ -67,8 +67,11 @@ import org.fabric3.api.host.domain.Domain;
 import org.fabric3.api.host.runtime.HiddenPackages;
 import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.FileHelper;
+import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
 import org.fabric3.gradle.plugin.api.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.PluginRuntime;
+import org.fabric3.gradle.plugin.api.TestRecorder;
+import org.fabric3.gradle.plugin.api.TestResult;
 import org.fabric3.gradle.plugin.api.TestSuiteFactory;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 import org.fabric3.gradle.plugin.itest.aether.AetherBootstrap;
@@ -81,28 +84,27 @@ import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
 import org.fabric3.gradle.plugin.itest.runtime.PluginRuntimeBooter;
 import org.fabric3.gradle.plugin.itest.util.ClassLoaderHelper;
 import org.gradle.api.DefaultTask;
+import org.gradle.api.GradleException;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.gradle.api.tasks.TaskAction;
 import org.gradle.internal.service.ServiceRegistry;
 import org.gradle.logging.ProgressLogger;
 import org.gradle.logging.ProgressLoggerFactory;
+import org.gradle.logging.StyledTextOutput;
+import org.gradle.logging.StyledTextOutputFactory;
 
 /**
  * Boots an embedded Fabric3 runtime and runs integration tests for the current module and other configured modules.
  */
 public class Fabric3TestTask extends DefaultTask {
-    private String[] hiddenPackages = HiddenPackages.getPackages();
-
-    private enum Completion {
-        OK, ABORTED, TEST_ERROR
-    }
-
     private ProgressLoggerFactory progressLoggerFactory;
+    private StyledTextOutput output;
 
     @Inject
-    public Fabric3TestTask(ProgressLoggerFactory progressLoggerFactory) {
+    public Fabric3TestTask(ProgressLoggerFactory progressLoggerFactory, StyledTextOutputFactory outputFactory) {
         this.progressLoggerFactory = progressLoggerFactory;
+        this.output = outputFactory.create("fabric3");
     }
 
     @TaskAction
@@ -137,8 +139,9 @@ public class Fabric3TestTask extends DefaultTask {
 
         ClassLoader oldClassLoader = Thread.currentThread().getContextClassLoader();
 
-        Completion completion = Completion.ABORTED;
+        boolean aborted = false;
 
+        IntegrationTestSuite testSuite = null;
         try {
             Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
             // load the contributions
@@ -148,32 +151,47 @@ public class Fabric3TestTask extends DefaultTask {
             String name = convention.getCompositeName();
             Deployer deployer = new Deployer(namespace, name, buildDirectory, logger);
             String errorText = convention.getErrorText();
-            if (!deployer.deploy(runtime, errorText)) {
+            aborted = !deployer.deploy(runtime, errorText);
+            if (aborted) {
                 return;
             }
             progressLogger.progress("Running Fabric3 tests");
             TestSuiteFactory testSuiteFactory = runtime.getComponent(TestSuiteFactory.class);
-            testSuiteFactory.createTestSuite().execute();
+            testSuite = testSuiteFactory.createTestSuite(progressLogger);
+            testSuite.execute();
             tryLatch(runtime);
-            completion = Completion.OK;
         } finally {
             try {
                 booter.shutdown();
                 Thread.currentThread().setContextClassLoader(oldClassLoader);
-                switch (completion) {
-                    case OK:
-                        progressLogger.completed("COMPLETED");
-                        break;
-                    case ABORTED:
-                        progressLogger.completed("ABORTED");
-                        break;
-                    case TEST_ERROR:
-                        break;
-                }
             } catch (Exception e) {
                 // ignore
             }
         }
+        if (aborted) {
+            progressLogger.completed("ABORTED");
+            throw new GradleException("Integration tests were aborted.");
+        } else {
+            TestRecorder recorder = testSuite.getRecorder();
+            if (recorder.hasFailures()) {
+                for (TestResult result : recorder.getFailed()) {
+                    output.text("\n" + result.getTestClassName() + " > " + result.getTestMethodName());
+                    output.withStyle(StyledTextOutput.Style.Failure).println(" FAILED");
+                    output.withStyle(StyledTextOutput.Style.Normal).println("    " + result.getThrowable().getStackTrace()[0]);
+                }
+                displayResults(recorder);
+                progressLogger.completed("FAILED");
+                throw new GradleException("There were failing integration tests.");
+            } else {
+                displayResults(recorder);
+                progressLogger.completed("COMPLETED");
+            }
+        }
+    }
+
+    private void displayResults(TestRecorder recorder) {
+        String test = recorder.getSuccessful().size() == 1 ? "test" : "tests";
+        output.println("\n" + recorder.getSuccessful().size() + " " + test + " succeeded, " + recorder.getFailed().size() + " failed\n");
     }
 
     /**
@@ -286,9 +304,10 @@ public class Fabric3TestTask extends DefaultTask {
 
     private ClassLoader createParentClassLoader() {
         ClassLoader parentClassLoader = getClass().getClassLoader();
-        if (hiddenPackages.length > 0) {
+        String[] hidden = HiddenPackages.getPackages();
+        if (hidden.length > 0) {
             // mask hidden JDK and system classpath packages
-            parentClassLoader = new MaskingClassLoader(parentClassLoader, hiddenPackages);
+            parentClassLoader = new MaskingClassLoader(parentClassLoader, hidden);
         }
         return parentClassLoader;
     }

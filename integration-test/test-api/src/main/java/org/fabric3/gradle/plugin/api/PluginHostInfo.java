@@ -44,13 +44,22 @@ import org.fabric3.api.host.runtime.HostInfo;
 import org.gradle.api.Project;
 
 /**
- *
+ * Host info type for the Gradle plugin runtime.
  */
-// FIXME merge with Maven deploy functionality into common superclass
 public interface PluginHostInfo extends HostInfo {
 
+    /**
+     * Returns the URLs to project dependencies.
+     *
+     * @return the URLs to project dependencies.
+     */
     Set<URL> getDependencyUrls();
 
+    /**
+     * Returns the current project the plugin is executing for.
+     *
+     * @return the current project the plugin is executing for
+     */
     Project getProject();
 
 }
