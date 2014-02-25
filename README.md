@@ -7,7 +7,7 @@ This repository hosts code for Fabric3 Gradle Test Plugins. Further information 
 Building the Source
 ------------------------
 
-Requirements are JDK 7 and Maven 3.1.1+.
+Requirements are JDK 7 and Gradle 1.11+.
 
 To build the source, execute:
 
