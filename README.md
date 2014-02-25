@@ -1,8 +1,7 @@
 Fabric3 Gradle Test Plugins
 =========================
 
-This repository hosts code for Fabric3 Gradle Plugins. Further information on can be found at http://www.fabric3
-.org.
+This repository hosts code for Fabric3 GradleTest  Plugins. Further information on can be found at http://www.fabric3.org.
 
 
 Building the Source
