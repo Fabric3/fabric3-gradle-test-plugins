@@ -56,6 +56,7 @@ public class TestPluginConvention {
     private String compositeNamespace = "urn:fabric3.org";
     private String compositeName = "TestComposite";
     private String errorText;
+    private boolean report;
 
     private Set<Artifact> extensions = new HashSet<>();
     private Set<Artifact> profiles = new HashSet<>();
@@ -94,6 +95,14 @@ public class TestPluginConvention {
 
     public void setErrorText(String errorText) {
         this.errorText = errorText;
+    }
+
+    public boolean isReport() {
+        return report;
+    }
+
+    public void setReport(boolean report) {
+        this.report = report;
     }
 
     public void extension(Map<String, String> extension) {

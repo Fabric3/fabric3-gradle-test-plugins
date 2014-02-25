@@ -37,33 +37,37 @@
 */
 package org.fabric3.gradle.plugin.test;
 
-import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 
-import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
+import org.fabric3.gradle.plugin.api.test.IntegrationTests;
 import org.fabric3.gradle.plugin.api.test.TestRecorder;
-import org.fabric3.gradle.plugin.api.test.TestSuiteFactory;
-import org.fabric3.spi.container.wire.Wire;
-import org.fabric3.test.spi.TestWireHolder;
-import org.gradle.logging.ProgressLogger;
-import org.oasisopen.sca.annotation.Reference;
 
 /**
  *
  */
-public class TestSuiteFactoryImpl implements TestSuiteFactory {
-    private TestWireHolder wireHolder;
+public class IntegrationTestsImpl implements IntegrationTests {
+    private TestRecorder recorder;
+    private List<TestSet> testSets = new ArrayList<>();
 
-    public TestSuiteFactoryImpl(@Reference TestWireHolder wireHolder) {
-        this.wireHolder = wireHolder;
+    public IntegrationTestsImpl(TestRecorder recorder) {
+        this.recorder = recorder;
     }
 
-    public IntegrationTestSuite createTestSuite(ProgressLogger progressLogger) {
-        TestRecorder recorder = new TestRecorder();
-        IntegrationTestSuiteImpl suite = new IntegrationTestSuiteImpl(recorder);
-        for (Map.Entry<String, Wire> entry : wireHolder.getWires().entrySet()) {
-            TestSet testSet = new TestSet(entry.getKey(), entry.getValue(), recorder);
-            suite.add(testSet);
+    public TestRecorder getRecorder() {
+        return recorder;
+    }
+
+    public void add(TestSet testSet) {
+        testSets.add(testSet);
+    }
+
+    public void execute() {
+        recorder.start();
+        for (TestSet testSet : testSets) {
+            testSet.execute();
         }
-        return suite;
+        recorder.stop();
     }
+
 }

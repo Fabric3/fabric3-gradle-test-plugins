@@ -35,23 +35,35 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api.test;
+package org.fabric3.gradle.plugin.test;
+
+import java.util.Map;
+
+import org.fabric3.gradle.plugin.api.test.IntegrationTests;
+import org.fabric3.gradle.plugin.api.test.IntegrationTestsFactory;
+import org.fabric3.gradle.plugin.api.test.TestRecorder;
+import org.fabric3.spi.container.wire.Wire;
+import org.fabric3.test.spi.TestWireHolder;
+import org.gradle.logging.ProgressLogger;
+import org.oasisopen.sca.annotation.Reference;
 
 /**
- * Contains integration tests to be executed.
+ *
  */
-public interface IntegrationTestSuite {
+public class IntegrationTestsFactoryImpl implements IntegrationTestsFactory {
+    private TestWireHolder wireHolder;
 
-    /**
-     * Returns the recorder for the test run.
-     *
-     * @return the recorder
-     */
-    TestRecorder getRecorder();
+    public IntegrationTestsFactoryImpl(@Reference TestWireHolder wireHolder) {
+        this.wireHolder = wireHolder;
+    }
 
-    /**
-     * Executes the tests.
-     */
-    void execute();
-
+    public IntegrationTests createTests(ProgressLogger progressLogger) {
+        TestRecorder recorder = new TestRecorder();
+        IntegrationTestsImpl suite = new IntegrationTestsImpl(recorder);
+        for (Map.Entry<String, Wire> entry : wireHolder.getWires().entrySet()) {
+            TestSet testSet = new TestSet(entry.getKey(), entry.getValue(), recorder);
+            suite.add(testSet);
+        }
+        return suite;
+    }
 }

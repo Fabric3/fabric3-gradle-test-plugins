@@ -65,7 +65,7 @@ public class JUnitReportWriterImpl implements JUnitReportWriter {
         try {
             writer = factory.createXMLStreamWriter(stream);
             writer.writeStartDocument();
-
+            writer.writeStartElement("testsuites");
             for (TestSuiteResult result : recorder.getResults()) {
                 writer.writeStartElement("testsuite");
 
@@ -85,6 +85,7 @@ public class JUnitReportWriterImpl implements JUnitReportWriter {
 
                 writer.writeEndElement(); // testsuite
             }
+            writer.writeEndElement(); // testsuites
             writer.writeEndDocument();
         } catch (XMLStreamException e) {
             if (writer != null) {

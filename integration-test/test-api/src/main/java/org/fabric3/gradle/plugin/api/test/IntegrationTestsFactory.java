@@ -40,9 +40,9 @@ package org.fabric3.gradle.plugin.api.test;
 import org.gradle.logging.ProgressLogger;
 
 /**
- * Creates {@link IntegrationTestSuite}s that run integration tests.
+ * Creates {@link IntegrationTests}s that run integration tests.
  */
-public interface TestSuiteFactory {
+public interface IntegrationTestsFactory {
 
     /**
      * Creates an integration test suite.
@@ -50,6 +50,6 @@ public interface TestSuiteFactory {
      * @param progressLogger the progress logger for reporting test run information
      * @return the test suite
      */
-    IntegrationTestSuite createTestSuite(ProgressLogger progressLogger);
+    IntegrationTests createTests(ProgressLogger progressLogger);
 
 }

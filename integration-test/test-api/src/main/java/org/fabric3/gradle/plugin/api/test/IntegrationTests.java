@@ -35,39 +35,23 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.test;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
-import org.fabric3.gradle.plugin.api.test.TestRecorder;
+package org.fabric3.gradle.plugin.api.test;
 
 /**
- *
+ * Contains integration tests to be executed.
  */
-public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
-    private TestRecorder recorder;
-    private List<TestSet> testSets = new ArrayList<>();
+public interface IntegrationTests {
 
-    public IntegrationTestSuiteImpl(TestRecorder recorder) {
-        this.recorder = recorder;
-    }
+    /**
+     * Returns the recorder for the test run.
+     *
+     * @return the recorder
+     */
+    TestRecorder getRecorder();
 
-    public TestRecorder getRecorder() {
-        return recorder;
-    }
-
-    public void add(TestSet testSet) {
-        testSets.add(testSet);
-    }
-
-    public void execute() {
-        recorder.start();
-        for (TestSet testSet : testSets) {
-            testSet.execute();
-        }
-        recorder.stop();
-    }
+    /**
+     * Executes the tests.
+     */
+    void execute();
 
 }

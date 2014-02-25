@@ -39,6 +39,7 @@ package org.fabric3.gradle.plugin.itest.impl;
 
 import javax.inject.Inject;
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -67,17 +68,18 @@ import org.fabric3.api.host.domain.Domain;
 import org.fabric3.api.host.runtime.HiddenPackages;
 import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.FileHelper;
-import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
 import org.fabric3.gradle.plugin.api.runtime.PluginHostInfo;
 import org.fabric3.gradle.plugin.api.runtime.PluginRuntime;
+import org.fabric3.gradle.plugin.api.test.IntegrationTests;
+import org.fabric3.gradle.plugin.api.test.IntegrationTestsFactory;
 import org.fabric3.gradle.plugin.api.test.TestRecorder;
 import org.fabric3.gradle.plugin.api.test.TestResult;
-import org.fabric3.gradle.plugin.api.test.TestSuiteFactory;
 import org.fabric3.gradle.plugin.api.test.TestSuiteResult;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
-import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.config.TestPluginConvention;
 import org.fabric3.gradle.plugin.itest.deployer.Deployer;
+import org.fabric3.gradle.plugin.itest.report.JUnitReportWriterImpl;
+import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
 import org.fabric3.gradle.plugin.itest.resolver.Resolver;
 import org.fabric3.gradle.plugin.itest.runtime.PluginBootConfiguration;
@@ -101,11 +103,13 @@ import org.gradle.logging.StyledTextOutputFactory;
 public class Fabric3TestTask extends DefaultTask {
     private ProgressLoggerFactory progressLoggerFactory;
     private StyledTextOutput output;
+    private JUnitReportWriterImpl reportWriter;
 
     @Inject
     public Fabric3TestTask(ProgressLoggerFactory progressLoggerFactory, StyledTextOutputFactory outputFactory) {
         this.progressLoggerFactory = progressLoggerFactory;
         this.output = outputFactory.create("fabric3");
+        reportWriter = new JUnitReportWriterImpl();
     }
 
     @TaskAction
@@ -142,7 +146,7 @@ public class Fabric3TestTask extends DefaultTask {
 
         boolean aborted = false;
 
-        IntegrationTestSuite testSuite = null;
+        IntegrationTests integrationTests = null;
         try {
             Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
             // load the contributions
@@ -157,9 +161,9 @@ public class Fabric3TestTask extends DefaultTask {
                 return;
             }
             progressLogger.progress("Running Fabric3 tests");
-            TestSuiteFactory testSuiteFactory = runtime.getComponent(TestSuiteFactory.class);
-            testSuite = testSuiteFactory.createTestSuite(progressLogger);
-            testSuite.execute();
+            IntegrationTestsFactory integrationTestsFactory = runtime.getComponent(IntegrationTestsFactory.class);
+            integrationTests = integrationTestsFactory.createTests(progressLogger);
+            integrationTests.execute();
             tryLatch(runtime);
         } finally {
             try {
@@ -173,12 +177,15 @@ public class Fabric3TestTask extends DefaultTask {
             progressLogger.completed("ABORTED");
             throw new Fabric3PluginException("Integration tests were aborted.");
         } else {
-            processResults(testSuite, progressLogger);
+            processResults(integrationTests, progressLogger, convention.isReport());
         }
     }
 
-    private void processResults(IntegrationTestSuite testSuite, ProgressLogger progressLogger) throws Fabric3PluginException {
-        TestRecorder recorder = testSuite.getRecorder();
+    private void processResults(IntegrationTests integrationTests, ProgressLogger progressLogger, boolean report) throws Fabric3PluginException {
+        TestRecorder recorder = integrationTests.getRecorder();
+        if (report) {
+            writeReport(recorder);
+        }
         if (recorder.hasFailures()) {
             for (TestSuiteResult suiteResult : recorder.getResults()) {
                 for (TestResult result : suiteResult.getTestResults()) {
@@ -196,6 +203,20 @@ public class Fabric3TestTask extends DefaultTask {
         } else {
             displaySummary(recorder);
             progressLogger.completed("COMPLETED");
+        }
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    private void writeReport(TestRecorder recorder) throws Fabric3PluginException {
+        File buildDir = getProject().getBuildDir();
+        File reportsDir = new File(buildDir, "reports");
+        File outputDir = new File(reportsDir, "integration-tests");
+        outputDir.mkdirs();
+
+        try (FileOutputStream stream = new FileOutputStream(new File(outputDir, "tests.xml"))) {
+            reportWriter.write(recorder, stream);
+        } catch (IOException e) {
+            throw new Fabric3PluginException(e);
         }
     }
 
