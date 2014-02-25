@@ -41,7 +41,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- *
+ * Records test results.
  */
 @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
 public class TestRecorder {
@@ -50,7 +50,7 @@ public class TestRecorder {
 
     public void result(TestResult result) {
         if (TestResult.Type.FAILED == result.getType()) {
-           failed.add(result);
+            failed.add(result);
         } else {
             successful.add(result);
         }

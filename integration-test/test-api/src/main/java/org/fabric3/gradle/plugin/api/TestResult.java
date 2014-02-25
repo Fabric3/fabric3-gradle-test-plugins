@@ -38,7 +38,7 @@
 package org.fabric3.gradle.plugin.api;
 
 /**
- *
+ * A test result.
  */
 public class TestResult {
     public enum Type {

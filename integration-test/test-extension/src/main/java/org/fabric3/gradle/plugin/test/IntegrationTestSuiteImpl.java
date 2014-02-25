@@ -49,8 +49,6 @@ import org.fabric3.gradle.plugin.api.TestRecorder;
 public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
     private TestRecorder recorder;
     private Map<String, TestSet> testSets = new HashMap<>();
-    private int testSetCount = 0;
-    private int testCount = 0;
 
     public IntegrationTestSuiteImpl(TestRecorder recorder) {
         this.recorder = recorder;
@@ -62,36 +60,12 @@ public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
 
     public void add(TestSet testSet) {
         testSets.put(testSet.getTestClassName(), testSet);
-        testSetCount += 1;
-        testCount += testSet.getTestCount();
     }
 
     public void execute() {
         for (TestSet testSet : testSets.values()) {
-            execute(testSet);
+            testSet.execute();
         }
-    }
-
-    public void execute(String testSetName) {
-//        ReporterManager reporterManager = reporterManagerFactory.createReporterManager();
-        for (TestSet testSet : testSets.values()) {
-            execute(testSet);
-        }
-    }
-
-    public int getNumTests() {
-        return testCount;
-    }
-
-    public int getNumTestSets() {
-        return testSetCount;
-    }
-
-    protected void execute(TestSet testSet) {
-        //        reporterManager.testSetStarting(new ReportEntry(this, testSet.getName(), "Starting"));
-        testSet.execute();
-        //        reporterManager.testSetCompleted(new ReportEntry(this, testSet.getName(), "Completed"));
-        //        reporterManager.reset();
     }
 
 }

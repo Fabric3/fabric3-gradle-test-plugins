@@ -38,12 +38,20 @@
 package org.fabric3.gradle.plugin.api;
 
 /**
- *
+ * Contains integration tests to be executed.
  */
 public interface IntegrationTestSuite {
 
+    /**
+     * Returns the recorder for the test run.
+     *
+     * @return the recorder
+     */
     TestRecorder getRecorder();
 
+    /**
+     * Executes the tests.
+     */
     void execute();
 
 }
