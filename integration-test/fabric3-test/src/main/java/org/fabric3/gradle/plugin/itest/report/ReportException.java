@@ -35,39 +35,17 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.test;
+package org.fabric3.gradle.plugin.itest.report;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
-import org.fabric3.gradle.plugin.api.test.TestRecorder;
+import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 
 /**
  *
  */
-public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
-    private TestRecorder recorder;
-    private List<TestSet> testSets = new ArrayList<>();
+public class ReportException extends Fabric3PluginException {
+    private static final long serialVersionUID = 1074338557121428687L;
 
-    public IntegrationTestSuiteImpl(TestRecorder recorder) {
-        this.recorder = recorder;
+    public ReportException(Throwable cause) {
+        super(cause);
     }
-
-    public TestRecorder getRecorder() {
-        return recorder;
-    }
-
-    public void add(TestSet testSet) {
-        testSets.add(testSet);
-    }
-
-    public void execute() {
-        recorder.start();
-        for (TestSet testSet : testSets) {
-            testSet.execute();
-        }
-        recorder.stop();
-    }
-
 }

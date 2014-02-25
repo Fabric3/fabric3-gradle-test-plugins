@@ -35,39 +35,71 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.test;
+package org.fabric3.gradle.plugin.api.test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
-import org.fabric3.gradle.plugin.api.test.TestRecorder;
-
 /**
- *
+ * A result for a test suite.
  */
-public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
-    private TestRecorder recorder;
-    private List<TestSet> testSets = new ArrayList<>();
+public class TestSuiteResult {
+    private String testClassName;
+    private long startTime;
+    private long elapsedTime;
 
-    public IntegrationTestSuiteImpl(TestRecorder recorder) {
-        this.recorder = recorder;
+    private List<TestResult> testResults = new ArrayList<>();
+
+    public TestSuiteResult(String testClassName) {
+        this.testClassName = testClassName;
     }
 
-    public TestRecorder getRecorder() {
-        return recorder;
+    public void start() {
+        startTime = System.currentTimeMillis();
     }
 
-    public void add(TestSet testSet) {
-        testSets.add(testSet);
+    public void stop() {
+        elapsedTime = System.currentTimeMillis() - startTime;
     }
 
-    public void execute() {
-        recorder.start();
-        for (TestSet testSet : testSets) {
-            testSet.execute();
+    public void add(TestResult result) {
+        testResults.add(result);
+    }
+
+    public String getTestClassName() {
+        return testClassName;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getElapsedTime() {
+        return elapsedTime;
+    }
+
+    public List<TestResult> getTestResults() {
+        return testResults;
+    }
+
+    public int getSuccessfulTests() {
+        int success = 0;
+        for (TestResult result : testResults) {
+            if (TestResult.Type.SUCCESS == result.getType()) {
+                success++;
+            }
         }
-        recorder.stop();
+        return success;
+    }
+
+    public int getFailedTests() {
+        int failed = 0;
+        for (TestResult result : testResults) {
+            if (TestResult.Type.FAILED == result.getType()) {
+                failed++;
+            }
+        }
+        return failed;
     }
 
 }

@@ -35,39 +35,67 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.test;
+package org.fabric3.gradle.plugin.api.test;
 
 import java.util.ArrayList;
 import java.util.List;
 
-import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
-import org.fabric3.gradle.plugin.api.test.TestRecorder;
-
 /**
- *
+ * Records test results.
  */
-public class IntegrationTestSuiteImpl implements IntegrationTestSuite {
-    private TestRecorder recorder;
-    private List<TestSet> testSets = new ArrayList<>();
+public class TestRecorder {
+    private List<TestSuiteResult> results = new ArrayList<>();
+    private long startTime;
+    private long elapsedTime = -1;
 
-    public IntegrationTestSuiteImpl(TestRecorder recorder) {
-        this.recorder = recorder;
+    public void result(TestSuiteResult result) {
+        results.add(result);
     }
 
-    public TestRecorder getRecorder() {
-        return recorder;
-    }
-
-    public void add(TestSet testSet) {
-        testSets.add(testSet);
-    }
-
-    public void execute() {
-        recorder.start();
-        for (TestSet testSet : testSets) {
-            testSet.execute();
+    public boolean hasFailures() {
+        for (TestSuiteResult result : results) {
+            for (TestResult testResult : result.getTestResults()) {
+                if (testResult.getType() == TestResult.Type.FAILED) {
+                    return true;
+                }
+            }
         }
-        recorder.stop();
+        return false;
     }
 
+    public void start() {
+        startTime = System.currentTimeMillis();
+    }
+
+    public void stop() {
+        elapsedTime = System.currentTimeMillis() - startTime;
+    }
+
+    public List<TestSuiteResult> getResults() {
+        return results;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getElapsedTime() {
+        return elapsedTime;
+    }
+
+    public int getSuccessfulTests() {
+        int success = 0;
+        for (TestSuiteResult result : results) {
+            success = success + result.getSuccessfulTests();
+        }
+        return success;
+    }
+
+    public int getFailedTests() {
+        int failed = 0;
+        for (TestSuiteResult result : results) {
+            failed = failed + result.getFailedTests();
+        }
+        return failed;
+    }
 }

@@ -37,8 +37,9 @@
 */
 package org.fabric3.gradle.plugin.test;
 
-import org.fabric3.gradle.plugin.api.TestRecorder;
-import org.fabric3.gradle.plugin.api.TestResult;
+import org.fabric3.gradle.plugin.api.test.TestRecorder;
+import org.fabric3.gradle.plugin.api.test.TestResult;
+import org.fabric3.gradle.plugin.api.test.TestSuiteResult;
 import org.fabric3.spi.container.invocation.Message;
 import org.fabric3.spi.container.invocation.MessageCache;
 import org.fabric3.spi.container.invocation.WorkContext;
@@ -63,6 +64,8 @@ public class TestSet {
     public void execute() {
         Message message = MessageCache.getAndResetMessage();
         WorkContext workContext = WorkContextCache.getAndResetThreadWorkContext();
+        TestSuiteResult suiteResult = new TestSuiteResult(testClassName);
+        suiteResult.start();
         for (InvocationChain chain : wire.getInvocationChains()) {
             message.setWorkContext(workContext);
             long start = System.currentTimeMillis();
@@ -70,21 +73,15 @@ public class TestSet {
             long elapsed = System.currentTimeMillis() - start;
             TestResult result;
             if (response.isFault()) {
-                result = new TestResult(testClassName, chain.getPhysicalOperation().getName(), (Throwable) response.getBody(), elapsed);
+                result = new TestResult(testClassName, chain.getPhysicalOperation().getName(), (Throwable) response.getBody(), start, elapsed);
             } else {
-                result = new TestResult(testClassName, chain.getPhysicalOperation().getName(), TestResult.Type.SUCCESS, elapsed);
+                result = new TestResult(testClassName, chain.getPhysicalOperation().getName(), TestResult.Type.SUCCESS, start, elapsed);
             }
-            recorder.result(result);
+            suiteResult.add(result);
             message.reset();
             workContext.reset();
         }
-    }
-
-    public int getTestCount() {
-        return wire.getInvocationChains().size();
-    }
-
-    public String getTestClassName() {
-        return testClassName;
+        suiteResult.stop();
+        recorder.result(suiteResult);
     }
 }

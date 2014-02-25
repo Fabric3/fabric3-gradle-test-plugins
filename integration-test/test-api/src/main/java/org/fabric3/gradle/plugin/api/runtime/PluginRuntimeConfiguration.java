@@ -35,58 +35,39 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api;
+package org.fabric3.gradle.plugin.api.runtime;
 
-import java.net.URI;
-import java.net.URL;
+import javax.management.MBeanServer;
 
-import org.fabric3.api.host.contribution.ContributionSource;
-import org.fabric3.api.host.stream.Source;
-import org.fabric3.api.host.stream.UrlSource;
+import org.eclipse.aether.RepositorySystem;
+import org.eclipse.aether.RepositorySystemSession;
+import org.fabric3.api.host.monitor.DestinationRouter;
+import org.fabric3.api.host.runtime.HostInfo;
+import org.fabric3.api.host.runtime.RuntimeConfiguration;
 
 /**
  *
  */
 // FIXME merge with Maven deploy functionality into common superclass
-public class PluginContributionSource implements ContributionSource {
-    public static final String CONTENT_TYPE = "application/vnd.fabric3.plugin-project";
-    private URI uri;
-    private URL url;
-    private long timestamp;
-    private Source source;
+public class PluginRuntimeConfiguration extends RuntimeConfiguration {
+    private RepositorySystem system;
+    private RepositorySystemSession session;
 
-    public PluginContributionSource(URI uri, URL url) {
-        this.uri = uri;
-        this.url = url;
-        this.timestamp = System.currentTimeMillis();
-        this.source = new UrlSource(url);
+    public PluginRuntimeConfiguration(HostInfo hostInfo,
+                                      MBeanServer mBeanServer,
+                                      DestinationRouter router,
+                                      RepositorySystem system,
+                                      RepositorySystemSession session) {
+        super(hostInfo, mBeanServer, router);
+        this.system = system;
+        this.session = session;
     }
 
-    public URI getUri() {
-        return uri;
+    public RepositorySystem getSystem() {
+        return system;
     }
 
-    public boolean persist() {
-        return false;
-    }
-
-    public boolean isExtension() {
-        return false;
-    }
-
-    public Source getSource() {
-        return source;
-    }
-
-    public URL getLocation() {
-        return url;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public String getContentType() {
-        return CONTENT_TYPE;
+    public RepositorySystemSession getSession() {
+        return session;
     }
 }

@@ -39,9 +39,9 @@ package org.fabric3.gradle.plugin.test;
 
 import java.util.Map;
 
-import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
-import org.fabric3.gradle.plugin.api.TestRecorder;
-import org.fabric3.gradle.plugin.api.TestSuiteFactory;
+import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
+import org.fabric3.gradle.plugin.api.test.TestRecorder;
+import org.fabric3.gradle.plugin.api.test.TestSuiteFactory;
 import org.fabric3.spi.container.wire.Wire;
 import org.fabric3.test.spi.TestWireHolder;
 import org.gradle.logging.ProgressLogger;

@@ -35,21 +35,61 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api;
-
-import org.gradle.logging.ProgressLogger;
+package org.fabric3.gradle.plugin.api.test;
 
 /**
- * Creates {@link IntegrationTestSuite}s that run integration tests.
+ * A test result.
  */
-public interface TestSuiteFactory {
+public class TestResult {
+    public enum Type {
+        SUCCESS, FAILED
+    }
 
-    /**
-     * Creates an integration test suite.
-     *
-     * @param progressLogger the progress logger for reporting test run information
-     * @return the test suite
-     */
-    IntegrationTestSuite createTestSuite(ProgressLogger progressLogger);
+    private String testClassName;
+    private String testMethodName;
+    private Type type;
+    private Throwable throwable;
+    private long startTime;
+    private long elapsedTime;
 
+    public TestResult(String testClassName, String testMethodName, Type type, long startTime, long elapsedTime) {
+        this.testClassName = testClassName;
+        this.testMethodName = testMethodName;
+        this.type = type;
+        this.startTime = startTime;
+        this.elapsedTime = elapsedTime;
+    }
+
+    public TestResult(String testClassName, String testMethodName, Throwable throwable, long startTime, long elapsedTime) {
+        this.testClassName = testClassName;
+        this.testMethodName = testMethodName;
+        this.throwable = throwable;
+        this.startTime = startTime;
+        this.type = Type.FAILED;
+        this.elapsedTime = elapsedTime;
+    }
+
+    public String getTestClassName() {
+        return testClassName;
+    }
+
+    public String getTestMethodName() {
+        return testMethodName;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public Throwable getThrowable() {
+        return throwable;
+    }
+
+    public long getStartTime() {
+        return startTime;
+    }
+
+    public long getElapsedTime() {
+        return elapsedTime;
+    }
 }

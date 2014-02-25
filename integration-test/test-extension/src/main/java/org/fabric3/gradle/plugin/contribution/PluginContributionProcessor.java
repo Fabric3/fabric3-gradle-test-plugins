@@ -50,7 +50,7 @@ import org.fabric3.api.host.contribution.InstallException;
 import org.fabric3.api.host.stream.Source;
 import org.fabric3.api.host.stream.UrlSource;
 import org.fabric3.api.host.util.FileHelper;
-import org.fabric3.gradle.plugin.api.PluginHostInfo;
+import org.fabric3.gradle.plugin.api.runtime.PluginHostInfo;
 import org.fabric3.spi.contribution.ContentTypeResolutionException;
 import org.fabric3.spi.contribution.ContentTypeResolver;
 import org.fabric3.spi.contribution.Contribution;

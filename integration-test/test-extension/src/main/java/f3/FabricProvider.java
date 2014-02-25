@@ -43,7 +43,7 @@ import org.fabric3.api.Namespaces;
 import org.fabric3.api.annotation.model.Provides;
 import org.fabric3.api.model.type.builder.CompositeBuilder;
 import org.fabric3.api.model.type.component.Composite;
-import org.fabric3.gradle.plugin.api.TestSuiteFactory;
+import org.fabric3.gradle.plugin.api.test.TestSuiteFactory;
 import org.fabric3.gradle.plugin.contribution.PluginContributionProcessor;
 import org.fabric3.gradle.plugin.contribution.ProjectClasspathProcessor;
 import org.fabric3.gradle.plugin.test.TestSuiteFactoryImpl;

@@ -35,23 +35,21 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api;
+package org.fabric3.gradle.plugin.api.test;
+
+import org.gradle.logging.ProgressLogger;
 
 /**
- * Contains integration tests to be executed.
+ * Creates {@link IntegrationTestSuite}s that run integration tests.
  */
-public interface IntegrationTestSuite {
+public interface TestSuiteFactory {
 
     /**
-     * Returns the recorder for the test run.
+     * Creates an integration test suite.
      *
-     * @return the recorder
+     * @param progressLogger the progress logger for reporting test run information
+     * @return the test suite
      */
-    TestRecorder getRecorder();
-
-    /**
-     * Executes the tests.
-     */
-    void execute();
+    IntegrationTestSuite createTestSuite(ProgressLogger progressLogger);
 
 }

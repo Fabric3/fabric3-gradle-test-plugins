@@ -35,37 +35,17 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api;
+package org.fabric3.gradle.plugin.itest.report;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.io.OutputStream;
+
+import org.fabric3.gradle.plugin.api.test.TestRecorder;
 
 /**
- * Records test results.
+ *
  */
-@SuppressWarnings("ThrowableResultOfMethodCallIgnored")
-public class TestRecorder {
-    private List<TestResult> failed = new ArrayList<>();
-    private List<TestResult> successful = new ArrayList<>();
+public interface JUnitReportWriter {
 
-    public void result(TestResult result) {
-        if (TestResult.Type.FAILED == result.getType()) {
-            failed.add(result);
-        } else {
-            successful.add(result);
-        }
+    void write(TestRecorder recorder, OutputStream stream) throws ReportException;
 
-    }
-
-    public boolean hasFailures() {
-        return !failed.isEmpty();
-    }
-
-    public List<TestResult> getFailed() {
-        return failed;
-    }
-
-    public List<TestResult> getSuccessful() {
-        return successful;
-    }
 }

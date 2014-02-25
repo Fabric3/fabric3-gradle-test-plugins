@@ -35,7 +35,7 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api;
+package org.fabric3.gradle.plugin.api.runtime;
 
 import java.net.URL;
 import java.util.Set;

@@ -45,7 +45,7 @@ import java.net.URLConnection;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.fabric3.gradle.plugin.api.PluginHostInfo;
+import org.fabric3.gradle.plugin.api.runtime.PluginHostInfo;
 import org.fabric3.spi.contribution.archive.ClasspathProcessor;
 import org.fabric3.spi.contribution.archive.ClasspathProcessorRegistry;
 import org.fabric3.spi.model.os.Library;

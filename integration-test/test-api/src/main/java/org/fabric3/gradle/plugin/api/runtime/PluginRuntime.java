@@ -35,54 +35,33 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api;
+package org.fabric3.gradle.plugin.api.runtime;
+
+import javax.xml.namespace.QName;
+import java.net.URL;
+
+import org.fabric3.api.host.contribution.ContributionException;
+import org.fabric3.api.host.domain.DeploymentException;
+import org.fabric3.api.host.runtime.Fabric3Runtime;
+import org.fabric3.api.host.runtime.HostInfo;
 
 /**
- * A test result.
+ *
  */
-public class TestResult {
-    public enum Type {
-        SUCCESS, FAILED
-    }
+// FIXME merge with Maven deploy functionality into common superclass
+public interface PluginRuntime<T extends HostInfo> extends Fabric3Runtime {
 
-    private String testClassName;
-    private String testMethodName;
-    private Type type;
-    private Throwable throwable;
-    private long elapsedTime;
+    T getHostInfo();
 
-    public TestResult(String testClassName, String testMethodName, Type type, long elapsedTime) {
-        this.testClassName = testClassName;
-        this.testMethodName = testMethodName;
-        this.type = type;
-        this.elapsedTime = elapsedTime;
-    }
+    /**
+     * Deploys a composite by qualified name contained in the Maven module the runtime is currently executing for.
+     *
+     * @param base      the module output directory location
+     * @param composite the composite qualified name to activate
+     * @throws ContributionException if a contribution is thrown. The cause may a ValidationException resulting from  errors in the contribution. In this case
+     *                               the errors should be reported back to the user.
+     * @throws DeploymentException   if there is an error activating the test composite
+     */
+    void deploy(URL base, QName composite) throws ContributionException, DeploymentException;
 
-    public TestResult(String testClassName, String testMethodName, Throwable throwable, long elapsedTime) {
-        this.testClassName = testClassName;
-        this.testMethodName = testMethodName;
-        this.throwable = throwable;
-        this.type = Type.FAILED;
-        this.elapsedTime = elapsedTime;
-    }
-
-    public String getTestClassName() {
-        return testClassName;
-    }
-
-    public String getTestMethodName() {
-        return testMethodName;
-    }
-
-    public Type getType() {
-        return type;
-    }
-
-    public Throwable getThrowable() {
-        return throwable;
-    }
-
-    public long getElapsedTime() {
-        return elapsedTime;
-    }
 }

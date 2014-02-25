@@ -68,9 +68,9 @@ import org.fabric3.api.host.runtime.ShutdownException;
 import org.fabric3.api.host.stream.InputStreamSource;
 import org.fabric3.api.host.stream.Source;
 import org.fabric3.api.host.util.FileHelper;
-import org.fabric3.gradle.plugin.api.PluginHostInfo;
-import org.fabric3.gradle.plugin.api.PluginRuntime;
-import org.fabric3.gradle.plugin.api.PluginRuntimeConfiguration;
+import org.fabric3.gradle.plugin.api.runtime.PluginHostInfo;
+import org.fabric3.gradle.plugin.api.runtime.PluginRuntime;
+import org.fabric3.gradle.plugin.api.runtime.PluginRuntimeConfiguration;
 import org.gradle.api.Project;
 import org.gradle.api.logging.Logger;
 import org.w3c.dom.Document;
@@ -113,7 +113,7 @@ public class PluginRuntimeBooter {
 
         Map<String, String> exportedPackages = new HashMap<>();
         exportedPackages.put("org.fabric3.test.spi", Names.VERSION);
-        exportedPackages.put("org.fabric3.runtime.maven", Names.VERSION);
+        exportedPackages.put("org.fabric3.gradle.plugin.api", Names.VERSION);
         exportedPackages.put("org.junit", PluginConstants.JUNIT_VERSION);
 
         BootConfiguration configuration = new BootConfiguration();

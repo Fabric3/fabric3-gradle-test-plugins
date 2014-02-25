@@ -44,7 +44,7 @@ import java.net.URL;
 
 import org.fabric3.api.host.contribution.ValidationException;
 import org.fabric3.api.host.domain.AssemblyException;
-import org.fabric3.gradle.plugin.api.PluginRuntime;
+import org.fabric3.gradle.plugin.api.runtime.PluginRuntime;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 import org.gradle.api.logging.Logger;
 

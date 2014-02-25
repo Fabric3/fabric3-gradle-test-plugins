@@ -67,12 +67,13 @@ import org.fabric3.api.host.domain.Domain;
 import org.fabric3.api.host.runtime.HiddenPackages;
 import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.FileHelper;
-import org.fabric3.gradle.plugin.api.IntegrationTestSuite;
-import org.fabric3.gradle.plugin.api.PluginHostInfo;
-import org.fabric3.gradle.plugin.api.PluginRuntime;
-import org.fabric3.gradle.plugin.api.TestRecorder;
-import org.fabric3.gradle.plugin.api.TestResult;
-import org.fabric3.gradle.plugin.api.TestSuiteFactory;
+import org.fabric3.gradle.plugin.api.test.IntegrationTestSuite;
+import org.fabric3.gradle.plugin.api.runtime.PluginHostInfo;
+import org.fabric3.gradle.plugin.api.runtime.PluginRuntime;
+import org.fabric3.gradle.plugin.api.test.TestRecorder;
+import org.fabric3.gradle.plugin.api.test.TestResult;
+import org.fabric3.gradle.plugin.api.test.TestSuiteFactory;
+import org.fabric3.gradle.plugin.api.test.TestSuiteResult;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.config.TestPluginConvention;
@@ -179,10 +180,15 @@ public class Fabric3TestTask extends DefaultTask {
     private void processResults(IntegrationTestSuite testSuite, ProgressLogger progressLogger) throws Fabric3PluginException {
         TestRecorder recorder = testSuite.getRecorder();
         if (recorder.hasFailures()) {
-            for (TestResult result : recorder.getFailed()) {
-                output.text("\n" + result.getTestClassName() + " > " + result.getTestMethodName());
-                output.withStyle(StyledTextOutput.Style.Failure).println(" FAILED");
-                output.withStyle(StyledTextOutput.Style.Normal).println("    " + result.getThrowable().getStackTrace()[0]);
+            for (TestSuiteResult suiteResult : recorder.getResults()) {
+                for (TestResult result : suiteResult.getTestResults()) {
+                    if (result.getType() != TestResult.Type.FAILED) {
+                        continue;
+                    }
+                    output.text("\n" + result.getTestClassName() + " > " + result.getTestMethodName());
+                    output.withStyle(StyledTextOutput.Style.Failure).println(" FAILED");
+                    output.withStyle(StyledTextOutput.Style.Normal).println("    " + result.getThrowable().getStackTrace()[0]);
+                }
             }
             displaySummary(recorder);
             progressLogger.completed("FAILED");
@@ -194,8 +200,10 @@ public class Fabric3TestTask extends DefaultTask {
     }
 
     private void displaySummary(TestRecorder recorder) {
-        String test = recorder.getSuccessful().size() == 1 ? "test" : "tests";
-        output.println("\n" + recorder.getSuccessful().size() + " " + test + " succeeded, " + recorder.getFailed().size() + " failed\n");
+        int successfulTests = recorder.getSuccessfulTests();
+        int failedTests = recorder.getFailedTests();
+        String test = successfulTests == 1 ? "test" : "tests";
+        output.println("\n" + successfulTests + " " + test + " succeeded, " + failedTests + " failed\n");
     }
 
     /**

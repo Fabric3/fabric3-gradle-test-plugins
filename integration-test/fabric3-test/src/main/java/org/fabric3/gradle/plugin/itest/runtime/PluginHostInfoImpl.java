@@ -47,7 +47,7 @@ import java.util.Set;
 import org.fabric3.api.host.Names;
 import org.fabric3.api.host.os.OperatingSystem;
 import org.fabric3.api.model.type.RuntimeMode;
-import org.fabric3.gradle.plugin.api.PluginHostInfo;
+import org.fabric3.gradle.plugin.api.runtime.PluginHostInfo;
 import org.gradle.api.Project;
 
 /**
