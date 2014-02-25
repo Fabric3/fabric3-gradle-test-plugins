@@ -66,7 +66,7 @@ import org.fabric3.api.host.contribution.ContributionSource;
 import org.fabric3.api.host.contribution.FileContributionSource;
 
 /**
- *
+ * Resolves artifacts using Aether.
  */
 public class Resolver {
     private RepositorySystem system;

@@ -74,7 +74,7 @@ import org.fabric3.gradle.plugin.api.TestRecorder;
 import org.fabric3.gradle.plugin.api.TestResult;
 import org.fabric3.gradle.plugin.api.TestSuiteFactory;
 import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
-import org.fabric3.gradle.plugin.itest.aether.AetherBootstrap;
+import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.config.TestPluginConvention;
 import org.fabric3.gradle.plugin.itest.deployer.Deployer;
 import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
@@ -95,7 +95,7 @@ import org.gradle.logging.StyledTextOutput;
 import org.gradle.logging.StyledTextOutputFactory;
 
 /**
- * Boots an embedded Fabric3 runtime and runs integration tests for the current module and other configured modules.
+ * Boots an embedded Fabric3 runtime and runs integration tests for the current project and other configured projects.
  */
 public class Fabric3TestTask extends DefaultTask {
     private ProgressLoggerFactory progressLoggerFactory;
@@ -170,26 +170,30 @@ public class Fabric3TestTask extends DefaultTask {
         }
         if (aborted) {
             progressLogger.completed("ABORTED");
-            throw new GradleException("Integration tests were aborted.");
+            throw new Fabric3PluginException("Integration tests were aborted.");
         } else {
-            TestRecorder recorder = testSuite.getRecorder();
-            if (recorder.hasFailures()) {
-                for (TestResult result : recorder.getFailed()) {
-                    output.text("\n" + result.getTestClassName() + " > " + result.getTestMethodName());
-                    output.withStyle(StyledTextOutput.Style.Failure).println(" FAILED");
-                    output.withStyle(StyledTextOutput.Style.Normal).println("    " + result.getThrowable().getStackTrace()[0]);
-                }
-                displayResults(recorder);
-                progressLogger.completed("FAILED");
-                throw new GradleException("There were failing integration tests.");
-            } else {
-                displayResults(recorder);
-                progressLogger.completed("COMPLETED");
-            }
+            processResults(testSuite, progressLogger);
         }
     }
 
-    private void displayResults(TestRecorder recorder) {
+    private void processResults(IntegrationTestSuite testSuite, ProgressLogger progressLogger) throws Fabric3PluginException {
+        TestRecorder recorder = testSuite.getRecorder();
+        if (recorder.hasFailures()) {
+            for (TestResult result : recorder.getFailed()) {
+                output.text("\n" + result.getTestClassName() + " > " + result.getTestMethodName());
+                output.withStyle(StyledTextOutput.Style.Failure).println(" FAILED");
+                output.withStyle(StyledTextOutput.Style.Normal).println("    " + result.getThrowable().getStackTrace()[0]);
+            }
+            displaySummary(recorder);
+            progressLogger.completed("FAILED");
+            throw new Fabric3PluginException("There were failing integration tests.");
+        } else {
+            displaySummary(recorder);
+            progressLogger.completed("COMPLETED");
+        }
+    }
+
+    private void displaySummary(TestRecorder recorder) {
         String test = recorder.getSuccessful().size() == 1 ? "test" : "tests";
         output.println("\n" + recorder.getSuccessful().size() + " " + test + " succeeded, " + recorder.getFailed().size() + " failed\n");
     }

@@ -53,13 +53,13 @@ import org.gradle.api.logging.Logger;
  */
 // FIXME merge with Maven deploy functionality into common superclass
 public class Deployer {
-    private Logger log;
+    private Logger logger;
     private String compositeNamespace;
     private String compositeName;
     private File buildDirectory;
 
-    public Deployer(String compositeNamespace, String compositeName, File buildDirectory, Logger log) {
-        this.log = log;
+    public Deployer(String compositeNamespace, String compositeName, File buildDirectory, Logger logger) {
+        this.logger = logger;
         this.compositeNamespace = compositeNamespace;
         this.compositeName = compositeName;
         this.buildDirectory = buildDirectory;
@@ -101,7 +101,7 @@ public class Deployer {
         b.append("CONTRIBUTION ERRORS\n");
         b.append("-------------------------------------------------------\n\n");
         b.append(cause.getMessage());
-        log.error(b.toString());
+        logger.error(b.toString());
     }
 
     private void reportDeploymentErrors(AssemblyException cause) {
@@ -110,7 +110,7 @@ public class Deployer {
         b.append("DEPLOYMENT ERRORS\n");
         b.append("-------------------------------------------------------\n\n");
         b.append(cause.getMessage());
-        log.error(b.toString());
+        logger.error(b.toString());
     }
 
     private URL getBuildDirectoryUrl() {

@@ -47,10 +47,17 @@ import org.gradle.api.artifacts.Configuration;
 import org.gradle.api.artifacts.Dependency;
 
 /**
- *
+ * Returns the set of artifacts a project depends on.
  */
 public class ProjectDependencies {
 
+    /**
+     * The set of artifacts a project depends on.
+     *
+     * @param project the project
+     * @param filter  artifacts to filter from the result
+     * @return the dependencies
+     */
     public static Set<Artifact> calculateProjectDependencies(Project project, Set<Artifact> filter) {
         Set<Artifact> dependencies = new HashSet<>();
         for (Configuration configuration : project.getConfigurations()) {
