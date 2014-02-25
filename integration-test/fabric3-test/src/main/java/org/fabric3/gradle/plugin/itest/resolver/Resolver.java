@@ -53,6 +53,9 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.collection.CollectRequest;
 import org.eclipse.aether.graph.Dependency;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.resolution.ArtifactDescriptorException;
+import org.eclipse.aether.resolution.ArtifactDescriptorRequest;
+import org.eclipse.aether.resolution.ArtifactDescriptorResult;
 import org.eclipse.aether.resolution.ArtifactRequest;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
@@ -103,9 +106,9 @@ public class Resolver {
         Set<Artifact> expandedExtensions = new HashSet<>();
         expandedExtensions.addAll(Dependencies.getCoreExtensions(runtimeVersion));
         expandedExtensions.addAll(extensions);
-        // FXIME
-        //        Set<Artifact> expandedProfiles = expandProfileExtensions(profiles);
-        //        expandedExtensions.addAll(expandedProfiles);
+
+        Set<Artifact> expandedProfiles = expandProfileExtensions(profiles);
+        expandedExtensions.addAll(expandedProfiles);
 
         Set<URL> extensionUrls = resolve(expandedExtensions);
         return createContributionSources(extensionUrls);
@@ -180,6 +183,39 @@ public class Resolver {
         ArtifactResult result = system.resolveArtifact(session, request);
         return result.getArtifact();
 
+    }
+
+    /**
+     * Returns the set of extensions for the given profiles.
+     *
+     * @param profiles the profiles
+     * @return the expanded profile set including extensions and remote repositories for transitive dependencies
+     */
+    private Set<Artifact> expandProfileExtensions(Set<Artifact> profiles) throws ArtifactResolutionException {
+        Set<Artifact> dependencies = new HashSet<>();
+        for (Artifact profile : profiles) {
+            try {
+                ArtifactDescriptorRequest request = new ArtifactDescriptorRequest();
+                request.setArtifact(profile);
+                request.setRepositories(repositories);
+                ArtifactDescriptorResult result = system.readArtifactDescriptor(session, request);
+                List<Exception> exceptions = result.getExceptions();
+                if (!exceptions.isEmpty()) {
+                    // Maven itself hard-codes exceptions.get(0) so we will do the same  :-(
+                    Exception exception = exceptions.get(0);
+                    throw new ArtifactResolutionException(null, exception.getMessage(), exception);
+                }
+
+                for (Dependency dependency : result.getDependencies()) {
+
+                    dependencies.add(dependency.getArtifact());
+                }
+            } catch (ArtifactDescriptorException e) {
+                throw new ArtifactResolutionException(null, e.getMessage(), e);
+            }
+
+        }
+        return dependencies;
     }
 
     private List<ContributionSource> createContributionSources(Set<URL> urls) {

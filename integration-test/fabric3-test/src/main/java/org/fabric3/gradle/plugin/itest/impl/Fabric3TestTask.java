@@ -292,7 +292,7 @@ public class Fabric3TestTask extends DefaultTask {
 
             File buildDir = project.getBuildDir();
             configuration.setOutputDirectory(buildDir);
-            configuration.setSystemConfig(configuration.getSystemConfig());
+            configuration.setSystemConfig(convention.getSystemConfig());
             configuration.setRepositorySession(session);
             configuration.setRepositorySystem(system);
             return configuration;

@@ -97,7 +97,7 @@ public class TestPluginConvention {
     }
 
     public void extension(Map<String, String> extension) {
-        extensions.add(convert(extension));
+        extensions.add(convert(extension, "jar"));
     }
 
     public void extension(String extension) {
@@ -105,7 +105,7 @@ public class TestPluginConvention {
     }
 
     public void exclude(Map<String, String> exclusion) {
-        exclusions.add(convert(exclusion));
+        exclusions.add(convert(exclusion, "jar"));
     }
 
     public void exclude(String exclusion) {
@@ -113,7 +113,7 @@ public class TestPluginConvention {
     }
 
     public void profile(Map<String, String> profile) {
-        profiles.add(convert(profile));
+        profiles.add(convert(profile, "pom"));
     }
 
     public void profile(String profile) {
@@ -121,7 +121,7 @@ public class TestPluginConvention {
     }
 
     public void shared(Map<String, String> artifact) {
-        shared.add(convert(artifact));
+        shared.add(convert(artifact, "jar"));
     }
 
     public void shared(String artifact) {
@@ -129,7 +129,7 @@ public class TestPluginConvention {
     }
 
     public void contribution(Map<String, String> contribution) {
-        contributions.add(convert(contribution));
+        contributions.add(convert(contribution, "jar"));
     }
 
     public void contribution(String contribution) {
@@ -156,7 +156,15 @@ public class TestPluginConvention {
         return shared;
     }
 
-    private Artifact convert(Map<String, String> extension) {
+    public String getSystemConfig() {
+        return systemConfig;
+    }
+
+    public void setSystemConfig(String systemConfig) {
+        this.systemConfig = systemConfig;
+    }
+
+    private Artifact convert(Map<String, String> extension, String type) {
         String group = extension.get("group");
         if (group == null) {
             throw new IllegalArgumentException("A group must be specified on an Fabric3 artifact definition");
@@ -169,7 +177,10 @@ public class TestPluginConvention {
         if (version == null) {
             throw new IllegalArgumentException("A version must be specified on an Fabric3 artifact definition");
         }
-        return new DefaultArtifact(group, name, "jar", version);
+        if (type.equals("pom")) {
+            return new DefaultArtifact(group, name, type, type, version);
+        }
+        return new DefaultArtifact(group, name, type, version);
     }
 
 }

@@ -149,8 +149,7 @@ public class PluginRuntimeBooter {
         tempDir.mkdir();
 
         URI domain = URI.create(PluginConstants.DOMAIN);
-        // FIXME directory name
-        File baseDir = new File(outputDirectory, "test-classes");
+        File baseDir = new File(outputDirectory, "main");
         OperatingSystem os = BootstrapHelper.getOperatingSystem();
 
         PluginHostInfo hostInfo = new PluginHostInfoImpl(domain, environment, moduleDependencies, baseDir, tempDir, os, project);
