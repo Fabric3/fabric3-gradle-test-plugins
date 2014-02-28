@@ -43,6 +43,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
@@ -254,25 +255,61 @@ public class Fabric3TestTask extends DefaultTask {
      */
     private void deployContributions(PluginRuntime<PluginHostInfo> runtime, TestPluginConvention convention, Resolver resolver) throws Fabric3PluginException {
         Set<Artifact> contributions = convention.getContributions();
-        if (contributions.isEmpty()) {
+        ContributionService contributionService = runtime.getComponent(ContributionService.class, Names.CONTRIBUTION_SERVICE_URI);
+        Domain domain = runtime.getComponent(Domain.class, Names.APPLICATION_DOMAIN_URI);
+        if (!contributions.isEmpty()) {
+            try {
+                List<ContributionSource> sources = new ArrayList<>();
+                Set<URL> resolved = resolver.resolve(contributions);
+                for (URL url : resolved) {
+                    URI uri = URI.create(new File(url.getFile()).getName());
+                    ContributionSource source = new FileContributionSource(uri, url, -1, true);
+                    sources.add(source);
+                }
+                List<URI> uris = contributionService.store(sources);
+                contributionService.install(uris);
+                domain.include(uris);
+            } catch (ContributionNotFoundException | InstallException | DeploymentException | StoreException | ArtifactResolutionException e) {
+                throw new Fabric3PluginException("Error installing contributions", e);
+            }
+        }
+        Set<Project> projectContributions = convention.getProjectContributions();
+        if (projectContributions.isEmpty()) {
             return;
         }
-        try {
-            ContributionService contributionService = runtime.getComponent(ContributionService.class, Names.CONTRIBUTION_SERVICE_URI);
-            Domain domain = runtime.getComponent(Domain.class, Names.APPLICATION_DOMAIN_URI);
-            List<ContributionSource> sources = new ArrayList<>();
-            Set<URL> resolved = resolver.resolve(contributions);
-            for (URL url : resolved) {
-                URI uri = URI.create(new File(url.getFile()).getName());
-                ContributionSource source = new FileContributionSource(uri, url, -1, true);
-                sources.add(source);
+        List<ContributionSource> sources = new ArrayList<>();
+        for (Project project : projectContributions) {
+            File[] files = new File(project.getBuildDir() + File.separator + "libs").listFiles();
+            File source;
+            if (files == null || files.length == 0) {
+                throw new GradleException("Archive not found for contribution project: " + project.getName());
+            } else if (files.length > 1) {
+                // More than one archive. Check if a WAR is produced and use that as sometimes the JAR task may not be disabled in a webapp project, resulting
+                // in multiple artifacts.
+                int war = -1;
+                for (File file : files) {
+                    if (file.getName().endsWith(".war")) {
+                        war++;
+                        break;
+                    }
+                }
+                if (war == -1) {
+                    throw new GradleException("Contribution project has multiple library archives: " + project.getName());
+                }
+                source = files[war];
+            } else {
+                source = files[0];
             }
-            List<URI> uris = contributionService.store(sources);
-            contributionService.install(uris);
-            domain.include(uris);
-        } catch (ContributionNotFoundException | InstallException | DeploymentException | StoreException | ArtifactResolutionException e) {
-            throw new Fabric3PluginException("Error installing contributions", e);
+            try {
+                URI uri = URI.create(source.getName());
+                sources.add(new FileContributionSource(uri, source.toURI().toURL(), -1, false));
+                List<URI> uris = contributionService.store(sources);
+                domain.include(uris);
+            } catch (MalformedURLException | StoreException | DeploymentException e) {
+                throw new GradleException(e.getMessage(), e);
+            }
         }
+
     }
 
     /**

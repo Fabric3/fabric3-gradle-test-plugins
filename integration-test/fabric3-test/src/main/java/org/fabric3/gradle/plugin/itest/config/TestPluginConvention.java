@@ -43,6 +43,7 @@ import java.util.Set;
 
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.gradle.api.Project;
 
 /**
  * Defines configuration conventions for the Fabric3 test plugin.
@@ -62,6 +63,7 @@ public class TestPluginConvention {
     private Set<Artifact> profiles = new HashSet<>();
     private Set<Artifact> exclusions = new HashSet<>();
     private Set<Artifact> shared = new HashSet<>();
+    private Set<Project> projectContributions = new HashSet<>();
 
     private Set<Artifact> contributions = new HashSet<>();
 
@@ -145,8 +147,16 @@ public class TestPluginConvention {
         contributions.add(new DefaultArtifact(contribution));
     }
 
+    public void contribution(Project project) {
+        projectContributions.add(project);
+    }
+
     public Set<Artifact> getContributions() {
         return contributions;
+    }
+
+    public Set<Project> getProjectContributions() {
+        return projectContributions;
     }
 
     public Set<Artifact> getExtensions() {
@@ -188,8 +198,15 @@ public class TestPluginConvention {
         }
         if (type.equals("pom")) {
             return new DefaultArtifact(group, name, type, type, version);
+        } else if (type.equals("zip")) {
+            return new DefaultArtifact(group, name, "bin", "zip", version);
         }
-        return new DefaultArtifact(group, name, type, version);
+        String archiveExtension = extension.get("extension");
+        if (archiveExtension != null) {
+            return new DefaultArtifact(group, name, archiveExtension, version);
+        } else {
+            return new DefaultArtifact(group, name, type, version);
+        }
     }
 
 }
