@@ -53,6 +53,7 @@ import java.util.Set;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
+import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.DependencyResolutionException;
@@ -66,27 +67,28 @@ import org.fabric3.api.host.contribution.InstallException;
 import org.fabric3.api.host.contribution.StoreException;
 import org.fabric3.api.host.domain.DeploymentException;
 import org.fabric3.api.host.domain.Domain;
+import org.fabric3.api.host.monitor.DestinationRouter;
 import org.fabric3.api.host.runtime.HiddenPackages;
 import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.FileHelper;
-import org.fabric3.gradle.plugin.api.runtime.PluginHostInfo;
-import org.fabric3.gradle.plugin.api.runtime.PluginRuntime;
 import org.fabric3.gradle.plugin.api.test.IntegrationTests;
 import org.fabric3.gradle.plugin.api.test.IntegrationTestsFactory;
 import org.fabric3.gradle.plugin.api.test.TestRecorder;
 import org.fabric3.gradle.plugin.api.test.TestResult;
 import org.fabric3.gradle.plugin.api.test.TestSuiteResult;
-import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
 import org.fabric3.gradle.plugin.itest.config.TestPluginConvention;
-import org.fabric3.gradle.plugin.itest.deployer.Deployer;
+import org.fabric3.gradle.plugin.itest.deployer.GradleDeployer;
 import org.fabric3.gradle.plugin.itest.report.JUnitReportWriterImpl;
 import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
-import org.fabric3.gradle.plugin.itest.resolver.Resolver;
-import org.fabric3.gradle.plugin.itest.runtime.PluginBootConfiguration;
-import org.fabric3.gradle.plugin.itest.runtime.PluginConstants;
-import org.fabric3.gradle.plugin.itest.runtime.PluginRuntimeBooter;
-import org.fabric3.gradle.plugin.itest.util.ClassLoaderHelper;
+import org.fabric3.gradle.plugin.itest.runtime.GradleRuntimeBooter;
+import org.fabric3.gradle.plugin.itest.runtime.PluginDestinationRouter;
+import org.fabric3.plugin.Fabric3PluginException;
+import org.fabric3.plugin.api.runtime.PluginRuntime;
+import org.fabric3.plugin.resolver.Resolver;
+import org.fabric3.plugin.runtime.PluginBootConfiguration;
+import org.fabric3.plugin.runtime.PluginConstants;
+import org.fabric3.plugin.util.ClassLoaderHelper;
 import org.gradle.api.DefaultTask;
 import org.gradle.api.GradleException;
 import org.gradle.api.Project;
@@ -102,6 +104,7 @@ import org.gradle.logging.StyledTextOutputFactory;
  * Boots an embedded Fabric3 runtime and runs integration tests for the current project and other configured projects.
  */
 public class Fabric3TestTask extends DefaultTask {
+    private static final String FABRIC3_GRADLE = "org.codehaus.fabric3.gradle";
     private ProgressLoggerFactory progressLoggerFactory;
     private StyledTextOutput output;
     private JUnitReportWriterImpl reportWriter;
@@ -137,9 +140,12 @@ public class Fabric3TestTask extends DefaultTask {
 
         PluginBootConfiguration configuration = createBootConfiguration(convention, resolver, system, session);
 
-        PluginRuntimeBooter booter = new PluginRuntimeBooter(configuration);
+        GradleRuntimeBooter booter = new GradleRuntimeBooter(configuration);
 
-        PluginRuntime<PluginHostInfo> runtime = booter.boot(project);
+        PluginRuntime runtime = booter.boot();
+
+        String environment = runtime.getHostInfo().getEnvironment();
+        logger.info("Fabric3 started [Environment: " + environment + "]");
 
         progressLogger.progress("BOOTED");
 
@@ -155,7 +161,7 @@ public class Fabric3TestTask extends DefaultTask {
             File buildDirectory = project.getBuildDir();
             String namespace = convention.getCompositeNamespace();
             String name = convention.getCompositeName();
-            Deployer deployer = new Deployer(namespace, name, buildDirectory, logger);
+            GradleDeployer deployer = new GradleDeployer(namespace, name, buildDirectory, logger);
             String errorText = convention.getErrorText();
             aborted = !deployer.deploy(runtime, errorText);
             if (aborted) {
@@ -233,7 +239,7 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @param runtime the runtime
      */
-    private void tryLatch(PluginRuntime<PluginHostInfo> runtime) {
+    private void tryLatch(PluginRuntime runtime) {
         Object latchComponent = runtime.getComponent(Object.class, PluginConstants.TEST_LATCH_SERVICE);
         if (latchComponent != null) {
             Class<?> type = latchComponent.getClass();
@@ -253,7 +259,7 @@ public class Fabric3TestTask extends DefaultTask {
      *
      * @param runtime the runtime
      */
-    private void deployContributions(PluginRuntime<PluginHostInfo> runtime, TestPluginConvention convention, Resolver resolver) throws Fabric3PluginException {
+    private void deployContributions(PluginRuntime runtime, TestPluginConvention convention, Resolver resolver) throws Fabric3PluginException {
         Set<Artifact> contributions = convention.getContributions();
         ContributionService contributionService = runtime.getComponent(ContributionService.class, Names.CONTRIBUTION_SERVICE_URI);
         Domain domain = runtime.getComponent(Domain.class, Names.APPLICATION_DOMAIN_URI);
@@ -343,6 +349,9 @@ public class Fabric3TestTask extends DefaultTask {
             Set<Artifact> hostArtifacts = resolver.resolveHostArtifacts(shared);
             Set<Artifact> runtimeArtifacts = resolver.resolveRuntimeArtifacts();
 
+            Artifact testExtension = new DefaultArtifact(FABRIC3_GRADLE, "test-extension", "jar", convention.getRuntimeVersion());
+            extensions.add(testExtension);
+
             List<ContributionSource> runtimeExtensions = resolver.resolveRuntimeExtensions(extensions, profiles);
 
             Set<Artifact> projectDependencies = ProjectDependencies.calculateProjectDependencies(project, hostArtifacts);
@@ -356,7 +365,10 @@ public class Fabric3TestTask extends DefaultTask {
             PluginBootConfiguration configuration = new PluginBootConfiguration();
             configuration.setBootClassLoader(bootClassLoader);
             configuration.setHostClassLoader(hostClassLoader);
-            configuration.setLogger(getLogger());
+
+            DestinationRouter router = new PluginDestinationRouter(getLogger());
+            configuration.setRouter(router);
+
             configuration.setExtensions(runtimeExtensions);
             configuration.setModuleDependencies(moduleDependencies);
 
@@ -365,6 +377,7 @@ public class Fabric3TestTask extends DefaultTask {
             configuration.setSystemConfig(convention.getSystemConfig());
             configuration.setRepositorySession(session);
             configuration.setRepositorySystem(system);
+            configuration.setBuildDir(project.getBuildDir());
             return configuration;
         } catch (DependencyResolutionException | ArtifactResolutionException e) {
             throw new GradleException(e.getMessage(), e);

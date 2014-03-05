@@ -37,10 +37,10 @@
 */
 package org.fabric3.gradle.plugin.itest.report;
 
-import org.fabric3.gradle.plugin.itest.Fabric3PluginException;
+import org.fabric3.plugin.Fabric3PluginException;
 
 /**
- *
+ * Raised when an error is encountered writing a test report.
  */
 public class ReportException extends Fabric3PluginException {
     private static final long serialVersionUID = 1074338557121428687L;

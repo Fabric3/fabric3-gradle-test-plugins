@@ -35,31 +35,25 @@
  * GNU General Public License along with Fabric3.
  * If not, see <http://www.gnu.org/licenses/>.
 */
-package org.fabric3.gradle.plugin.api.runtime;
+package org.fabric3.gradle.plugin.itest.deployer;
 
-import java.net.URL;
-import java.util.Set;
+import java.io.File;
 
-import org.fabric3.api.host.runtime.HostInfo;
-import org.gradle.api.Project;
+import org.fabric3.plugin.deployer.AbstractDeployer;
+import org.gradle.api.logging.Logger;
 
 /**
- * Host info type for the Gradle plugin runtime.
+ * Deploys a Gradle project as a contribution to the plugin runtime.
  */
-public interface PluginHostInfo extends HostInfo {
+public class GradleDeployer extends AbstractDeployer {
+    private Logger logger;
 
-    /**
-     * Returns the URLs to project dependencies.
-     *
-     * @return the URLs to project dependencies.
-     */
-    Set<URL> getDependencyUrls();
+    public GradleDeployer(String compositeNamespace, String compositeName, File buildDirectory, Logger logger) {
+        super(compositeNamespace, compositeName, buildDirectory);
+        this.logger = logger;
+    }
 
-    /**
-     * Returns the current project the plugin is executing for.
-     *
-     * @return the current project the plugin is executing for
-     */
-    Project getProject();
-
+    protected void logError(String message) {
+        logger.error(message);
+    }
 }

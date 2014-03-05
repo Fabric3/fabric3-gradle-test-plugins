@@ -42,10 +42,17 @@ import java.io.OutputStream;
 import org.fabric3.gradle.plugin.api.test.TestRecorder;
 
 /**
- *
+ * Writes a JUnit report to a stream.
  */
 public interface JUnitReportWriter {
 
+    /**
+     * Writes a JUnit report based on the recorder data to a stream.
+     *
+     * @param recorder the recorder
+     * @param stream   the stream
+     * @throws ReportException
+     */
     void write(TestRecorder recorder, OutputStream stream) throws ReportException;
 
 }
