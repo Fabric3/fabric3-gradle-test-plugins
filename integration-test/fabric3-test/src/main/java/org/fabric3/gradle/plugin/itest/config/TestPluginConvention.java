@@ -37,6 +37,7 @@
 */
 package org.fabric3.gradle.plugin.itest.config;
 
+import java.net.URL;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -64,6 +65,7 @@ public class TestPluginConvention {
     private Set<Artifact> exclusions = new HashSet<>();
     private Set<Artifact> shared = new HashSet<>();
     private Set<Project> projectContributions = new HashSet<>();
+    private Set<URL> urlContributions = new HashSet<>();
 
     private Set<Artifact> contributions = new HashSet<>();
 
@@ -151,12 +153,20 @@ public class TestPluginConvention {
         projectContributions.add(project);
     }
 
+    public void contribution(URL url) {
+        urlContributions.add(url);
+    }
+
     public Set<Artifact> getContributions() {
         return contributions;
     }
 
     public Set<Project> getProjectContributions() {
         return projectContributions;
+    }
+
+    public Set<URL> getUrlContributions() {
+        return urlContributions;
     }
 
     public Set<Artifact> getExtensions() {

@@ -57,20 +57,18 @@ import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.fabric3.api.host.Fabric3Exception;
 import org.fabric3.api.host.Names;
 import org.fabric3.api.host.classloader.MaskingClassLoader;
-import org.fabric3.api.host.contribution.ContributionNotFoundException;
 import org.fabric3.api.host.contribution.ContributionService;
 import org.fabric3.api.host.contribution.ContributionSource;
 import org.fabric3.api.host.contribution.FileContributionSource;
-import org.fabric3.api.host.contribution.InstallException;
 import org.fabric3.api.host.contribution.StoreException;
 import org.fabric3.api.host.domain.DeploymentException;
 import org.fabric3.api.host.domain.Domain;
 import org.fabric3.api.host.monitor.DestinationRouter;
 import org.fabric3.api.host.runtime.HiddenPackages;
 import org.fabric3.api.host.runtime.InitializationException;
-import org.fabric3.api.host.util.FileHelper;
 import org.fabric3.gradle.plugin.api.test.IntegrationTests;
 import org.fabric3.gradle.plugin.api.test.IntegrationTestsFactory;
 import org.fabric3.gradle.plugin.api.test.TestRecorder;
@@ -188,6 +186,7 @@ public class Fabric3TestTask extends DefaultTask {
         }
     }
 
+    @SuppressWarnings("ThrowableResultOfMethodCallIgnored")
     private void processResults(IntegrationTests integrationTests, ProgressLogger progressLogger, boolean report) throws Fabric3PluginException {
         TestRecorder recorder = integrationTests.getRecorder();
         if (report) {
@@ -263,27 +262,38 @@ public class Fabric3TestTask extends DefaultTask {
         Set<Artifact> contributions = convention.getContributions();
         ContributionService contributionService = runtime.getComponent(ContributionService.class, Names.CONTRIBUTION_SERVICE_URI);
         Domain domain = runtime.getComponent(Domain.class, Names.APPLICATION_DOMAIN_URI);
+
+        List<ContributionSource> sources = new ArrayList<>();
         if (!contributions.isEmpty()) {
             try {
-                List<ContributionSource> sources = new ArrayList<>();
                 Set<URL> resolved = resolver.resolve(contributions);
-                for (URL url : resolved) {
-                    URI uri = URI.create(new File(url.getFile()).getName());
-                    ContributionSource source = new FileContributionSource(uri, url, -1, true);
-                    sources.add(source);
-                }
-                List<URI> uris = contributionService.store(sources);
-                contributionService.install(uris);
-                domain.include(uris);
-            } catch (ContributionNotFoundException | InstallException | DeploymentException | StoreException | ArtifactResolutionException e) {
+                createSource(sources, resolved);
+            } catch (ArtifactResolutionException e) {
                 throw new Fabric3PluginException("Error installing contributions", e);
             }
         }
+        Set<URL> urlContributions = convention.getUrlContributions();
+        if (!urlContributions.isEmpty()) {
+            createSource(sources, urlContributions);
+        }
+
+        // deploy the archive and URL-based contributions
+        try {
+            List<URI> uris = contributionService.store(sources);
+            contributionService.install(uris);
+            domain.include(uris);
+        } catch (Fabric3Exception e) {
+            throw new Fabric3PluginException("Error installing contributions", e);
+        }
+
         Set<Project> projectContributions = convention.getProjectContributions();
+
         if (projectContributions.isEmpty()) {
             return;
         }
-        List<ContributionSource> sources = new ArrayList<>();
+
+        // deploy project contributions
+        List<ContributionSource> projectSources = new ArrayList<>();
         for (Project project : projectContributions) {
             File[] files = new File(project.getBuildDir() + File.separator + "libs").listFiles();
             File source;
@@ -308,8 +318,8 @@ public class Fabric3TestTask extends DefaultTask {
             }
             try {
                 URI uri = URI.create(source.getName());
-                sources.add(new FileContributionSource(uri, source.toURI().toURL(), -1, false));
-                List<URI> uris = contributionService.store(sources);
+                projectSources.add(new FileContributionSource(uri, source.toURI().toURL(), -1, false));
+                List<URI> uris = contributionService.store(projectSources);
                 domain.include(uris);
             } catch (MalformedURLException | StoreException | DeploymentException e) {
                 throw new GradleException(e.getMessage(), e);
@@ -318,15 +328,11 @@ public class Fabric3TestTask extends DefaultTask {
 
     }
 
-    /**
-     * Recursively cleans the F3 temporary directory.
-     */
-    private static void clearTempFiles() {
-        File f3TempDir = new File(System.getProperty("java.io.tmpdir"), ".f3");
-        try {
-            FileHelper.deleteDirectory(f3TempDir);
-        } catch (IOException e) {
-            e.printStackTrace();
+    private void createSource(List<ContributionSource> sources, Set<URL> resolved) {
+        for (URL url : resolved) {
+            URI uri = URI.create(new File(url.getFile()).getName());
+            ContributionSource source = new FileContributionSource(uri, url, -1, true);
+            sources.add(source);
         }
     }
 
