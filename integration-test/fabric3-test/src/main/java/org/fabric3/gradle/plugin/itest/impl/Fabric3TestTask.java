@@ -38,9 +38,12 @@
 package org.fabric3.gradle.plugin.itest.impl;
 
 import javax.inject.Inject;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
@@ -55,6 +58,7 @@ import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.fabric3.api.host.Fabric3Exception;
@@ -63,12 +67,11 @@ import org.fabric3.api.host.classloader.MaskingClassLoader;
 import org.fabric3.api.host.contribution.ContributionService;
 import org.fabric3.api.host.contribution.ContributionSource;
 import org.fabric3.api.host.contribution.FileContributionSource;
-import org.fabric3.api.host.contribution.StoreException;
-import org.fabric3.api.host.domain.DeploymentException;
 import org.fabric3.api.host.domain.Domain;
 import org.fabric3.api.host.monitor.DestinationRouter;
 import org.fabric3.api.host.runtime.HiddenPackages;
 import org.fabric3.api.host.runtime.InitializationException;
+import org.fabric3.api.host.util.IOHelper;
 import org.fabric3.gradle.plugin.api.test.IntegrationTests;
 import org.fabric3.gradle.plugin.api.test.IntegrationTestsFactory;
 import org.fabric3.gradle.plugin.api.test.TestRecorder;
@@ -132,7 +135,14 @@ public class Fabric3TestTask extends DefaultTask {
         ServiceRegistry registry = getServices();
         RepositorySystemSession session = AetherBootstrap.getRepositorySystemSession(system, registry, offline);
 
-        List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry);
+        RepositoryPolicy repoPolicy = new RepositoryPolicy(convention.isRemoteRepositoryEnabled(),
+                                                           convention.getUpdatePolicy(),
+                                                           RepositoryPolicy.CHECKSUM_POLICY_WARN);
+        RepositoryPolicy snapshotPolicy = new RepositoryPolicy(convention.isRemoteSnapshotRepositoryEnabled(),
+                                                               convention.getSnapshotUpdatePolicy(),
+                                                               RepositoryPolicy.CHECKSUM_POLICY_WARN);
+
+        List<RemoteRepository> repositories = AetherBootstrap.getRepositories(registry, repoPolicy, snapshotPolicy);
 
         Resolver resolver = new Resolver(system, session, repositories, convention.getRuntimeVersion());
 
@@ -272,9 +282,17 @@ public class Fabric3TestTask extends DefaultTask {
                 throw new Fabric3PluginException("Error installing contributions", e);
             }
         }
-        Set<URL> urlContributions = convention.getUrlContributions();
-        if (!urlContributions.isEmpty()) {
-            createSource(sources, urlContributions);
+        Set<File> fileContributions = convention.getFileContributions();
+        if (!fileContributions.isEmpty()) {
+            for (File file : fileContributions) {
+                URI uri = URI.create(file.getName());
+                try {
+                    ContributionSource source = new FileContributionSource(uri, file.toURI().toURL(), -1, true);
+                    sources.add(source);
+                } catch (MalformedURLException e) {
+                    throw new GradleException(e.getMessage(), e);
+                }
+            }
         }
 
         // deploy the archive and URL-based contributions
@@ -295,35 +313,15 @@ public class Fabric3TestTask extends DefaultTask {
         // deploy project contributions
         List<ContributionSource> projectSources = new ArrayList<>();
         for (Project project : projectContributions) {
-            File[] files = new File(project.getBuildDir() + File.separator + "libs").listFiles();
-            File source;
-            if (files == null || files.length == 0) {
-                throw new GradleException("Archive not found for contribution project: " + project.getName());
-            } else if (files.length > 1) {
-                // More than one archive. Check if a WAR is produced and use that as sometimes the JAR task may not be disabled in a webapp project, resulting
-                // in multiple artifacts.
-                int war = -1;
-                for (File file : files) {
-                    if (file.getName().endsWith(".war")) {
-                        war++;
-                        break;
-                    }
-                }
-                if (war == -1) {
-                    throw new GradleException("Contribution project has multiple library archives: " + project.getName());
-                }
-                source = files[war];
-            } else {
-                source = files[0];
-            }
-            try {
-                URI uri = URI.create(source.getName());
-                projectSources.add(new FileContributionSource(uri, source.toURI().toURL(), -1, false));
-                List<URI> uris = contributionService.store(projectSources);
-                domain.include(uris);
-            } catch (MalformedURLException | StoreException | DeploymentException e) {
-                throw new GradleException(e.getMessage(), e);
-            }
+            ContributionSource source = ProjectDependencies.createSource(project);
+            projectSources.add(source);
+        }
+        try {
+            List<URI> uris = contributionService.store(projectSources);
+            contributionService.install(uris);
+            domain.include(uris);
+        } catch (Fabric3Exception e) {
+            throw new GradleException(e.getMessage(), e);
         }
 
     }
@@ -348,9 +346,12 @@ public class Fabric3TestTask extends DefaultTask {
 
         Project project = getProject();
 
+        configureWeb(convention);
+
         Set<Artifact> shared = convention.getShared();
         Set<Artifact> extensions = convention.getExtensions();
         Set<Artifact> profiles = convention.getProfiles();
+
         try {
             Set<Artifact> hostArtifacts = resolver.resolveHostArtifacts(shared);
             Set<Artifact> runtimeArtifacts = resolver.resolveRuntimeArtifacts();
@@ -360,9 +361,7 @@ public class Fabric3TestTask extends DefaultTask {
 
             List<ContributionSource> runtimeExtensions = resolver.resolveRuntimeExtensions(extensions, profiles);
 
-            Set<Artifact> projectDependencies = ProjectDependencies.calculateProjectDependencies(project, hostArtifacts);
-            Set<URL> moduleDependencies = resolver.resolveDependencies(projectDependencies);
-
+            Set<URL> moduleDependencies = ProjectDependencies.calculateProjectDependencies(project, hostArtifacts, resolver);
             ClassLoader parentClassLoader = createParentClassLoader();
 
             ClassLoader hostClassLoader = ClassLoaderHelper.createHostClassLoader(parentClassLoader, hostArtifacts);
@@ -380,14 +379,40 @@ public class Fabric3TestTask extends DefaultTask {
 
             File buildDir = project.getBuildDir();
             configuration.setOutputDirectory(buildDir);
-            configuration.setSystemConfig(convention.getSystemConfig());
+            if (convention.getSystemConfig() != null) {
+                configuration.setSystemConfig(convention.getSystemConfig());
+            } else if (convention.getSystemConfigFile() != null) {
+                InputStream is = new FileInputStream(convention.getSystemConfigFile());
+                ByteArrayOutputStream os = new ByteArrayOutputStream();
+                IOHelper.copy(is, os);
+                configuration.setSystemConfig(new String(os.toByteArray()));
+            }
             configuration.setRepositorySession(session);
             configuration.setRepositorySystem(system);
             configuration.setBuildDir(project.getBuildDir());
             return configuration;
-        } catch (DependencyResolutionException | ArtifactResolutionException e) {
+        } catch (DependencyResolutionException | ArtifactResolutionException | IOException e) {
             throw new GradleException(e.getMessage(), e);
         }
+    }
+
+    private void configureWeb(TestPluginConvention convention) {
+        Set<Artifact> extensions = convention.getExtensions();
+        Set<Artifact> profiles = convention.getProfiles();
+        for (Artifact extension : extensions) {
+            if (extension.getArtifactId().equals("fabric3-jetty")) {
+                return;
+            }
+        }
+
+        for (Artifact profile : profiles) {
+            String id = profile.getArtifactId();
+            if (id.equals("profile-ws") || id.equals("profile-rs") || id.equals("profile-web")) {
+                extensions.add(new DefaultArtifact(profile.getGroupId(), "fabric3-jetty", "jar", profile.getVersion()));
+                return;
+            }
+        }
+
     }
 
     private ClassLoader createParentClassLoader() {

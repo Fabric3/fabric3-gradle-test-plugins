@@ -37,13 +37,14 @@
 */
 package org.fabric3.gradle.plugin.itest.config;
 
-import java.net.URL;
+import java.io.File;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.gradle.api.Project;
 
 /**
@@ -53,6 +54,7 @@ public class TestPluginConvention {
     public static final String FABRIC3_TEST_CONVENTION = "fabric3Test";
 
     private String systemConfig;
+    private File systemConfigFile;
 
     private String runtimeVersion = "2.5.0-SNAPSHOT";
     private String compositeNamespace = "urn:fabric3.org";
@@ -60,12 +62,17 @@ public class TestPluginConvention {
     private String errorText;
     private boolean report;
 
+    private String updatePolicy = RepositoryPolicy.UPDATE_POLICY_DAILY;  // the Maven repository update policy
+    private boolean remoteRepositoryEnabled = true;
+    private String snapshotUpdatePolicy = RepositoryPolicy.UPDATE_POLICY_NEVER;  // the Maven snapshot repository update policy
+    private boolean remoteSnapshotRepositoryEnabled = true;
+
     private Set<Artifact> extensions = new HashSet<>();
     private Set<Artifact> profiles = new HashSet<>();
     private Set<Artifact> exclusions = new HashSet<>();
     private Set<Artifact> shared = new HashSet<>();
     private Set<Project> projectContributions = new HashSet<>();
-    private Set<URL> urlContributions = new HashSet<>();
+    private Set<File> fileContributions = new HashSet<>();
 
     private Set<Artifact> contributions = new HashSet<>();
 
@@ -153,8 +160,8 @@ public class TestPluginConvention {
         projectContributions.add(project);
     }
 
-    public void contribution(URL url) {
-        urlContributions.add(url);
+    public void contribution(File file) {
+        fileContributions.add(file);
     }
 
     public Set<Artifact> getContributions() {
@@ -165,8 +172,8 @@ public class TestPluginConvention {
         return projectContributions;
     }
 
-    public Set<URL> getUrlContributions() {
-        return urlContributions;
+    public Set<File> getFileContributions() {
+        return fileContributions;
     }
 
     public Set<Artifact> getExtensions() {
@@ -191,6 +198,46 @@ public class TestPluginConvention {
 
     public void setSystemConfig(String systemConfig) {
         this.systemConfig = systemConfig;
+    }
+
+    public void setSystemConfigFile(File systemConfig) {
+        this.systemConfigFile = systemConfig;
+    }
+
+    public File getSystemConfigFile() {
+        return systemConfigFile;
+    }
+
+    public String getUpdatePolicy() {
+        return updatePolicy;
+    }
+
+    public void setUpdatePolicy(String updatePolicy) {
+        this.updatePolicy = updatePolicy;
+    }
+
+    public String getSnapshotUpdatePolicy() {
+        return snapshotUpdatePolicy;
+    }
+
+    public void setSnapshotUpdatePolicy(String snapshotUpdatePolicy) {
+        this.snapshotUpdatePolicy = snapshotUpdatePolicy;
+    }
+
+    public boolean isRemoteRepositoryEnabled() {
+        return remoteRepositoryEnabled;
+    }
+
+    public void setRemoteRepositoryEnabled(boolean remoteRepositoryEnabled) {
+        this.remoteRepositoryEnabled = remoteRepositoryEnabled;
+    }
+
+    public boolean isRemoteSnapshotRepositoryEnabled() {
+        return remoteSnapshotRepositoryEnabled;
+    }
+
+    public void setRemoteSnapshotRepositoryEnabled(boolean remoteSnapshotRepositoryEnabled) {
+        this.remoteSnapshotRepositoryEnabled = remoteSnapshotRepositoryEnabled;
     }
 
     private Artifact convert(Map<String, String> extension, String type) {

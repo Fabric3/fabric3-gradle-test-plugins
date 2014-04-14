@@ -50,6 +50,7 @@ import org.eclipse.aether.connector.basic.BasicRepositoryConnectorFactory;
 import org.eclipse.aether.impl.DefaultServiceLocator;
 import org.eclipse.aether.repository.LocalRepository;
 import org.eclipse.aether.repository.RemoteRepository;
+import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.spi.connector.RepositoryConnectorFactory;
 import org.eclipse.aether.spi.connector.transport.TransporterFactory;
 import org.eclipse.aether.transport.file.FileTransporterFactory;
@@ -92,7 +93,7 @@ public class AetherBootstrap {
         return session;
     }
 
-    public static List<RemoteRepository> getRepositories(ServiceRegistry registry) {
+    public static List<RemoteRepository> getRepositories(ServiceRegistry registry, RepositoryPolicy policy, RepositoryPolicy snapshotPolicy) {
         Iterator<ArtifactRepository> iterator = registry.get(RepositoryHandler.class).iterator();
         List<RemoteRepository> repositories = new ArrayList<>();
         while (iterator.hasNext()) {
@@ -101,12 +102,14 @@ public class AetherBootstrap {
             if (repository instanceof MavenArtifactRepository && !name.startsWith("MavenLocal")) {
                 MavenArtifactRepository mavenRepository = (MavenArtifactRepository) repository;
                 String url = mavenRepository.getUrl().toString();
-                RemoteRepository remoteRepository = new RemoteRepository.Builder(name, "default", url).build();
+                RemoteRepository.Builder builder = new RemoteRepository.Builder(name, "default", url);
+                RemoteRepository remoteRepository = builder.setPolicy(policy).setSnapshotPolicy(snapshotPolicy).build();
                 repositories.add(remoteRepository);
             }
         }
         if (repositories.isEmpty()) {
-            RemoteRepository remoteRepository = new RemoteRepository.Builder("central", "default", "http://central.maven.org/maven2/").build();
+            RemoteRepository.Builder builder = new RemoteRepository.Builder("central", "default", "http://central.maven.org/maven2/");
+            RemoteRepository remoteRepository = builder.setPolicy(policy).setSnapshotPolicy(snapshotPolicy).build();
             repositories.add(remoteRepository);
         }
         return repositories;
