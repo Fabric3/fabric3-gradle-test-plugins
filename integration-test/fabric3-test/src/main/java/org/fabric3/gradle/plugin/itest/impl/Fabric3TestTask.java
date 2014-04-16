@@ -50,8 +50,10 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
@@ -63,6 +65,7 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.DependencyResolutionException;
 import org.fabric3.api.host.Fabric3Exception;
 import org.fabric3.api.host.Names;
+import org.fabric3.api.host.classloader.DelegatingResourceClassLoader;
 import org.fabric3.api.host.classloader.MaskingClassLoader;
 import org.fabric3.api.host.contribution.ContributionService;
 import org.fabric3.api.host.contribution.ContributionSource;
@@ -84,6 +87,9 @@ import org.fabric3.gradle.plugin.itest.resolver.AetherBootstrap;
 import org.fabric3.gradle.plugin.itest.resolver.ProjectDependencies;
 import org.fabric3.gradle.plugin.itest.runtime.GradleRuntimeBooter;
 import org.fabric3.gradle.plugin.itest.runtime.PluginDestinationRouter;
+import org.fabric3.gradle.plugin.itest.stopwatch.NoOpStopWatch;
+import org.fabric3.gradle.plugin.itest.stopwatch.StopWatch;
+import org.fabric3.gradle.plugin.itest.stopwatch.StreamStopWatch;
 import org.fabric3.plugin.Fabric3PluginException;
 import org.fabric3.plugin.api.runtime.PluginRuntime;
 import org.fabric3.plugin.resolver.Resolver;
@@ -109,16 +115,24 @@ public class Fabric3TestTask extends DefaultTask {
     private ProgressLoggerFactory progressLoggerFactory;
     private StyledTextOutput output;
     private JUnitReportWriterImpl reportWriter;
+    private StopWatch stopWatch;
 
     @Inject
     public Fabric3TestTask(ProgressLoggerFactory progressLoggerFactory, StyledTextOutputFactory outputFactory) {
         this.progressLoggerFactory = progressLoggerFactory;
         this.output = outputFactory.create("fabric3");
         reportWriter = new JUnitReportWriterImpl();
+        if (Boolean.parseBoolean(System.getProperty("fabric3.performance"))) {
+            stopWatch = new StreamStopWatch("gradle", TimeUnit.MILLISECONDS, System.out);
+        } else {
+            stopWatch = new NoOpStopWatch();
+        }
     }
 
     @TaskAction
     public void fabric3Test() throws InitializationException, Fabric3PluginException {
+        stopWatch.start();
+
         ProgressLogger progressLogger = progressLoggerFactory.newOperation("fabric3");
 
         progressLogger.setDescription("Fabric3 tests");
@@ -150,7 +164,11 @@ public class Fabric3TestTask extends DefaultTask {
 
         GradleRuntimeBooter booter = new GradleRuntimeBooter(configuration);
 
+        stopWatch.split("Gradle setup");
+
         PluginRuntime runtime = booter.boot();
+
+        stopWatch.split("Fabric3 boot");
 
         String environment = runtime.getHostInfo().getEnvironment();
         logger.info("Fabric3 started [Environment: " + environment + "]");
@@ -165,7 +183,11 @@ public class Fabric3TestTask extends DefaultTask {
         try {
             Thread.currentThread().setContextClassLoader(configuration.getBootClassLoader());
             // load the contributions
+
             deployContributions(runtime, convention, resolver);
+
+            stopWatch.split("Fabric3 deploy contributions");
+
             File buildDirectory = project.getBuildDir();
             String namespace = convention.getCompositeNamespace();
             String name = convention.getCompositeName();
@@ -175,11 +197,21 @@ public class Fabric3TestTask extends DefaultTask {
             if (aborted) {
                 return;
             }
+
+            stopWatch.split("Fabric3 deploy test composite");
+
             progressLogger.progress("Running Fabric3 tests");
             IntegrationTestsFactory integrationTestsFactory = runtime.getComponent(IntegrationTestsFactory.class);
             integrationTests = integrationTestsFactory.createTests(progressLogger);
             integrationTests.execute();
+
+            stopWatch.split("Fabric3 run tests");
+
             tryLatch(runtime);
+
+            stopWatch.stop();
+
+            stopWatch.flush();
         } finally {
             try {
                 booter.shutdown();
@@ -348,11 +380,12 @@ public class Fabric3TestTask extends DefaultTask {
 
         configureWeb(convention);
 
-        Set<Artifact> shared = convention.getShared();
-        Set<Artifact> extensions = convention.getExtensions();
-        Set<Artifact> profiles = convention.getProfiles();
-
         try {
+            Set<Artifact> shared = convention.getShared();
+            Set<Project> sharedProjects = convention.getSharedProjects();
+            Set<Artifact> extensions = convention.getExtensions();
+            Set<Artifact> profiles = convention.getProfiles();
+
             Set<Artifact> hostArtifacts = resolver.resolveHostArtifacts(shared);
             Set<Artifact> runtimeArtifacts = resolver.resolveRuntimeArtifacts();
 
@@ -364,7 +397,9 @@ public class Fabric3TestTask extends DefaultTask {
             Set<URL> moduleDependencies = ProjectDependencies.calculateProjectDependencies(project, hostArtifacts, resolver);
             ClassLoader parentClassLoader = createParentClassLoader();
 
-            ClassLoader hostClassLoader = ClassLoaderHelper.createHostClassLoader(parentClassLoader, hostArtifacts);
+            URL[] sharedUrls = getSharedUrls(hostArtifacts, sharedProjects);
+
+            ClassLoader hostClassLoader = new DelegatingResourceClassLoader(sharedUrls, parentClassLoader);
             ClassLoader bootClassLoader = ClassLoaderHelper.createBootClassLoader(hostClassLoader, runtimeArtifacts);
 
             PluginBootConfiguration configuration = new PluginBootConfiguration();
@@ -394,6 +429,20 @@ public class Fabric3TestTask extends DefaultTask {
         } catch (DependencyResolutionException | ArtifactResolutionException | IOException e) {
             throw new GradleException(e.getMessage(), e);
         }
+    }
+
+    private URL[] getSharedUrls(Set<Artifact> shared, Set<Project> sharedProjects) throws MalformedURLException {
+        Set<URL> sharedUrls = new HashSet<>();
+        for (Artifact artifact : shared) {
+            if (artifact.getFile() == null) {
+                throw new GradleException("Archive not found for shared project: " + artifact.getGroupId() + ":" + artifact.getArtifactId());
+            }
+            sharedUrls.add(artifact.getFile().toURI().toURL());
+        }
+        for (Project sharedProject : sharedProjects) {
+            sharedUrls.add(ProjectDependencies.findArtifact(sharedProject).toURI().toURL());
+        }
+        return sharedUrls.toArray(new URL[sharedUrls.size()]);
     }
 
     private void configureWeb(TestPluginConvention convention) {

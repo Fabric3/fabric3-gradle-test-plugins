@@ -71,6 +71,7 @@ public class TestPluginConvention {
     private Set<Artifact> profiles = new HashSet<>();
     private Set<Artifact> exclusions = new HashSet<>();
     private Set<Artifact> shared = new HashSet<>();
+    private Set<Project> sharedProjects = new HashSet<>();
     private Set<Project> projectContributions = new HashSet<>();
     private Set<File> fileContributions = new HashSet<>();
 
@@ -148,6 +149,10 @@ public class TestPluginConvention {
         shared.add(new DefaultArtifact(artifact));
     }
 
+    public void sharedProject(Project project) {
+        sharedProjects.add(project);
+    }
+
     public void contribution(Map<String, String> contribution) {
         contributions.add(convert(contribution, "jar"));
     }
@@ -190,6 +195,10 @@ public class TestPluginConvention {
 
     public Set<Artifact> getShared() {
         return shared;
+    }
+
+    public Set<Project> getSharedProjects() {
+        return sharedProjects;
     }
 
     public String getSystemConfig() {
