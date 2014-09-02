@@ -111,7 +111,7 @@ import org.gradle.logging.StyledTextOutputFactory;
  * Boots an embedded Fabric3 runtime and runs integration tests for the current project and other configured projects.
  */
 public class Fabric3TestTask extends DefaultTask {
-    private static final String FABRIC3_GRADLE = "org.codehaus.fabric3.gradle";
+    private static final String FABRIC3_GRADLE = "org.fabric3.gradle";
     private ProgressLoggerFactory progressLoggerFactory;
     private StyledTextOutput output;
     private JUnitReportWriterImpl reportWriter;

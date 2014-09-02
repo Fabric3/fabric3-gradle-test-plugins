@@ -1,18 +1,31 @@
 /**
- * Build for Fabric3 Gradle plugins.
- *
+ * Build for Fabric3 Gradle test plugins.
+ * <p/>
  * By default, deploy project binaries, Javadoc and sources will be installed in the local Maven repo. To only build binaries and skip generating Javadoc and
  * source archives, pass the <code>skipSources<code> parameter to Gradle: gradlew -PskipSources
  * <p/>
- * To deploy to the CodeHaus Nexus snapshot repository, execute the 'uploadArchives' task. To deploy to the CodeHaus Nexus release staging repository,
- * change the version and execute the 'uploadArchives' task.
+ * To deploy to the CodeHaus Nexus release staging repository, change the version and execute:
+ * <code>./gradlew -Pbuild=deploy -Dcom.sun.net.ssl.rsaPreMasterSecretFix=true</code>
+ * after a full build has been run. Note the 'rsaPreMasterSecretFix' parameter is required as a workaround for this JDK bug:
+ * https://bugs.openjdk.java.net/browse/JDK-8030806
  * <p/>
  * Note the 'uploadArchives' tasks requires a gradle.properties file to be present containing private key information and authentication parameters
  * (codehausUsername and codehausPassword).
- */
-project.description = 'Fabric3 Gradle plugins'
 
-defaultTasks 'clean', 'assemble', 'install'
+ */
+project.description = 'Fabric3 Gradle test plugins'
+
+if (hasProperty('build')) {
+    ext.build = project['build']
+} else {
+    ext.build = 'default';
+}
+if (ext.build == 'deploy') {
+    defaultTasks 'uploadArchives'
+} else {
+    defaultTasks 'clean', 'assemble', 'install'
+}
+
 
 allprojects {
     repositories {
@@ -93,8 +106,8 @@ configure(distributions()) {
                 mavenDeployer {
                     beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                    repository(url: "https://nexus.codehaus.org/service/local/staging/deploy/maven2/") {
-                        authentication(userName: codehausUsername, password: codehausPassword)
+                    repository(url: "https://oss.sonatype.org/service/local/staging/deploy/maven2") {
+                        authentication(userName: sonatypeUsername, password: sonatypePassword)
                     }
 
                 }
@@ -102,16 +115,17 @@ configure(distributions()) {
                 mavenDeployer {
                     beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
-                    repository(url: "https://nexus.codehaus.org/content/repositories/snapshots/") {
-                        authentication(userName: codehausUsername, password: codehausPassword)
+                    repository(url: "https://oss.sonatype.org/content/repositories/snapshots") {
+                        authentication(userName: sonatypeUsername, password: sonatypePassword)
                     }
                 }
             }
         }
+
         signing {
+            required { releaseBuild && (build == 'full' || build == 'deploy') }
             sign configurations.archives
         }
-
     }
 }
 task wrapper(type: Wrapper) {
