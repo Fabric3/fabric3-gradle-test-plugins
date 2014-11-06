@@ -68,7 +68,7 @@ public class ProjectDependencies {
      * @param filter   artifacts to filter from the result
      * @param resolver the artifact resolver
      * @return the dependencies
-     * @throws GradleException
+     * @throws GradleException if there is an error
      */
     public static Set<URL> calculateProjectDependencies(Project project, Set<Artifact> filter, Resolver resolver) {
         Set<URL> artifacts = new HashSet<>();
@@ -110,7 +110,7 @@ public class ProjectDependencies {
      *
      * @param project the project
      * @return the source
-     * @throws GradleException
+     * @throws GradleException if there is an error
      */
     public static ContributionSource createSource(Project project) throws GradleException {
         File artifact = findArtifact(project);

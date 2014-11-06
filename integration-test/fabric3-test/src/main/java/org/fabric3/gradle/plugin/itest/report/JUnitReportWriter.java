@@ -51,7 +51,7 @@ public interface JUnitReportWriter {
      *
      * @param recorder the recorder
      * @param stream   the stream
-     * @throws ReportException
+     * @throws ReportException if there is an error
      */
     void write(TestRecorder recorder, OutputStream stream) throws ReportException;
 

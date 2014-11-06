@@ -4,7 +4,7 @@ import java.util.Map;
 
 /**
  * A stopwatch that measures elapsed time.
- * <p/>
+ *
  * Note implementations are not thread-safe.
  */
 public interface StopWatch {
