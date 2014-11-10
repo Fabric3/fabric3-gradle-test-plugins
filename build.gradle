@@ -93,7 +93,7 @@ configure(distributions()) {
 
             licenses {
                 license {
-                    name 'GNU + Classpath Exception'
+                    name 'Apache 2'
                     url 'http://www.fabric3.org/license.html'
                     distribution 'repo'
                 }
