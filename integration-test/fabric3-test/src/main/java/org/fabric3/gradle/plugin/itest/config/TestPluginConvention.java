@@ -35,7 +35,7 @@ public class TestPluginConvention {
     private String systemConfig;
     private File systemConfigFile;
 
-    private String runtimeVersion = "2.5.0-SNAPSHOT";
+    private String runtimeVersion = "2.5.0";
     private String compositeNamespace = "urn:fabric3.org";
     private String compositeName = "TestComposite";
     private String errorText;
