@@ -127,9 +127,9 @@ configure(distributions()) {
                         description 'Fabric3'
 
                         scm {
-                            url 'scm:git@github.com:Fabric3/fabric3-core.git'
-                            connection 'scm:git@github.com:Fabric3/fabric3-core.git'
-                            developerConnection 'scm:git@github.com:Fabric3/fabric3-core.git'
+                            url 'scm:git@github.com:Fabric3/fabric3-test-plugins.git'
+                            connection 'scm:git@github.com:Fabric3/fabric3-test-plugins.git'
+                            developerConnection 'scm:git@github.com:Fabric3/fabric3-test-plugins.git'
                         }
 
                         licenses {
