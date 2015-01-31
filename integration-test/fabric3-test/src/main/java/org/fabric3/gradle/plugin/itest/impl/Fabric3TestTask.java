@@ -42,6 +42,7 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.DependencyResolutionException;
+import org.fabric3.api.host.ContainerException;
 import org.fabric3.api.host.Fabric3Exception;
 import org.fabric3.api.host.Names;
 import org.fabric3.api.host.classloader.DelegatingResourceClassLoader;
@@ -52,7 +53,6 @@ import org.fabric3.api.host.contribution.FileContributionSource;
 import org.fabric3.api.host.domain.Domain;
 import org.fabric3.api.host.monitor.DestinationRouter;
 import org.fabric3.api.host.runtime.HiddenPackages;
-import org.fabric3.api.host.runtime.InitializationException;
 import org.fabric3.api.host.util.IOHelper;
 import org.fabric3.gradle.plugin.api.test.IntegrationTests;
 import org.fabric3.gradle.plugin.api.test.IntegrationTestsFactory;
@@ -109,7 +109,7 @@ public class Fabric3TestTask extends DefaultTask {
     }
 
     @TaskAction
-    public void fabric3Test() throws InitializationException, Fabric3PluginException {
+    public void fabric3Test() throws ContainerException, Fabric3PluginException {
         stopWatch.start();
 
         ProgressLogger progressLogger = progressLoggerFactory.newOperation("fabric3");

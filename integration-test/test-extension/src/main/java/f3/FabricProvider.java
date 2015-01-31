@@ -24,7 +24,7 @@ import org.fabric3.api.model.type.builder.CompositeBuilder;
 import org.fabric3.api.model.type.component.Composite;
 import org.fabric3.gradle.plugin.api.test.IntegrationTestsFactory;
 import org.fabric3.gradle.plugin.test.IntegrationTestsFactoryImpl;
-import org.fabric3.spi.model.type.system.SystemComponentDefinitionBuilder;
+import org.fabric3.spi.model.type.system.SystemComponentBuilder;
 
 /**
  *
@@ -35,10 +35,10 @@ public class FabricProvider {
     @Provides
     public static Composite getComposite() {
         CompositeBuilder compositeBuilder = CompositeBuilder.newBuilder(QNAME);
-//        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(WireHolderImpl.class).build());
-//        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(ProjectClasspathProcessor.class).build());
-//        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(PluginContributionProcessor.class).build());
-        compositeBuilder.component(SystemComponentDefinitionBuilder.newBuilder(IntegrationTestsFactory.class.getSimpleName(), IntegrationTestsFactoryImpl.class).build());
+//        compositeBuilder.component(SystemComponentBuilder.newBuilder(WireHolderImpl.class).build());
+//        compositeBuilder.component(SystemComponentBuilder.newBuilder(ProjectClasspathProcessor.class).build());
+//        compositeBuilder.component(SystemComponentBuilder.newBuilder(PluginContributionProcessor.class).build());
+        compositeBuilder.component(SystemComponentBuilder.newBuilder(IntegrationTestsFactory.class.getSimpleName(), IntegrationTestsFactoryImpl.class).build());
         return compositeBuilder.build();
     }
 }
