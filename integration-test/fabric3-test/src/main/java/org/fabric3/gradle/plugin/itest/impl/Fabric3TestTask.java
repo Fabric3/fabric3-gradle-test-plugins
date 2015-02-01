@@ -42,7 +42,6 @@ import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.repository.RepositoryPolicy;
 import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.DependencyResolutionException;
-import org.fabric3.api.host.ContainerException;
 import org.fabric3.api.host.Fabric3Exception;
 import org.fabric3.api.host.Names;
 import org.fabric3.api.host.classloader.DelegatingResourceClassLoader;
@@ -109,7 +108,7 @@ public class Fabric3TestTask extends DefaultTask {
     }
 
     @TaskAction
-    public void fabric3Test() throws ContainerException, Fabric3PluginException {
+    public void fabric3Test() throws Fabric3Exception, Fabric3PluginException {
         stopWatch.start();
 
         ProgressLogger progressLogger = progressLoggerFactory.newOperation("fabric3");
