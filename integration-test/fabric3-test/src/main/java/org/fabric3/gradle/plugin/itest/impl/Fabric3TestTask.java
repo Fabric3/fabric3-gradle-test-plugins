@@ -221,7 +221,6 @@ public class Fabric3TestTask extends DefaultTask {
                     output.text("\n" + result.getTestClassName() + " > " + result.getTestMethodName());
                     output.withStyle(StyledTextOutput.Style.Failure).println(" FAILED");
                     output.withStyle(StyledTextOutput.Style.Error).println(result.getThrowable());
-//                    output.withStyle(StyledTextOutput.Style.Normal).println("    " + result.getThrowable().getStackTrace()[0]);
                 }
             }
             displaySummary(recorder);
