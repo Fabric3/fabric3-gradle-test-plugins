@@ -20,7 +20,9 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.aether.artifact.Artifact;
@@ -109,17 +111,28 @@ public class ProjectDependencies {
         } else if (files.length > 1) {
             // More than one archive. Check if a WAR is produced and use that as sometimes the JAR task may not be disabled in a webapp project, resulting
             // in multiple artifacts.
-            int war = -1;
+            Map<String, File> sorted = new HashMap<>();
             for (File file : files) {
-                if (file.getName().endsWith(".war")) {
-                    war++;
-                    break;
+                String name = file.getName();
+                if (name.contains("-sources") || name.contains("-javadoc")) {
+                    continue;
                 }
+                int pos = name.lastIndexOf(".");
+                if (pos <= 0) {
+                    continue;
+                }
+                sorted.put(name.substring(pos + 1), file);
             }
-            if (war == -1) {
-                throw new GradleException("Contribution project has multiple library archives: " + project.getName());
+            source = sorted.get("war");
+            if (source == null) {
+                source = sorted.get("jar");
             }
-            source = files[war];
+            if (source == null) {
+                source = sorted.get("zip");
+            }
+            if (source == null) {
+                throw new GradleException("No suitable library archive found for project: " + project.getName());
+            }
         } else {
             source = files[0];
         }
